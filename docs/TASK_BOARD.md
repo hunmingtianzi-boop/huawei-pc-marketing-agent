@@ -41,3 +41,11 @@
 ## 第二阶段启动
 
 实际接续HEAD为9bbb976，工作区干净；G1证据存在且对应代码未变，直接引用。主控先做B00，业务契约2.0.0为新增边界，保留Probe1.0.0。主控负责scripts/**与tests/runs/**、tests/contracts/**及API/存储/资产/共享配置；其它恢复原所有权。模型字段当前为空，已核查明确的本机配置及本地11434服务，无可用完整配置；G2继续，G3待最小真实模型请求。
+
+统一基线已提交：6d01f360c92e103f3781578d5a16ff8344b5d715。三个真实工作树已创建：
+
+|task|path|branch|base|contract|allowed|状态|
+|---|---|---|---|---|---|---|
+|S2-ima|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ima|codex/s2-ima|6d01f36|2.0.0 + 1.0.0|src/server/ima/**、tests/ima/**|已准备派发|
+|S2-workflow|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-workflow|codex/s2-workflow|6d01f36|2.0.0 + 1.0.0|src/server/workflow/**、src/server/llm/**、src/server/verification/**、prompts/runtime/**、tests/workflow/**|已准备派发|
+|S2-ui|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ui|codex/s2-ui|6d01f36|2.0.0 + 1.0.0|src/app/**（排除src/app/api/**）、src/components/**、src/styles/**、tests/ui/**|已准备派发|
