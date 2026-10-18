@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, writeFile, rm, symlink, readFile } from "node:fs/promis
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
-import { retrieveLocalEvidence, readLocalCatalog } from "../../src/server/ima/local";
+import { retrieveLocalEvidence, readLocalCatalog, localRootPath } from "../../src/server/ima/local";
 import { ProductEvidence, type RetrievalServices } from "../../src/contracts/business";
 import { evidenceDigest } from "../../src/contracts/digests";
 import { decodeImage } from "../../src/server/assets/media";
@@ -172,4 +172,46 @@ test("synthetic local: conflicts and missing files remain explicit; mode and col
     for (let index = 0; index < 101; index++) await mkdir(path.join(f.root, "P1-产品参数库", "02-MateBook-Windows", `Synthetic${index}`));
     await assert.rejects(readLocalCatalog({ rootDir: f.root }), errorCode("BUDGET_EXCEEDED"));
   } finally { await f.cleanup(); }
+});
+
+test("synthetic local: supplied Windows folder identities map to full H1 and CSV only, nearby aliases remain rejected", async () => {
+  const f = await fixture();
+  try {
+    const mappings = [
+      ["MateBook 14 酷睿 Ultra", "HUAWEI MateBook 14 酷睿 Ultra"],
+      ["MateBook D 14", "HUAWEI MateBook D 14 2024"],
+      ["MateBook D 16", "HUAWEI MateBook D 16 2024"],
+      ["MateBook D 16 SE 版", "HUAWEI MateBook D 16 SE 版 2024"],
+      ["MateBook GT 系列", "HUAWEI MateBook GT 14"],
+      ["MateBook X系列", "HUAWEI MateBook X Pro 酷睿 Ultra 微绒典藏版"],
+    ];
+    const baseCsv = await readFile(path.join(f.product, "图片索引.csv"), "utf8");
+    for (const [folder, fullName] of mappings) {
+      const product = path.join(f.root, "P1-产品参数库", "02-MateBook-Windows", folder);
+      await mkdir(path.join(product, "图片"), { recursive: true });
+      await writeFile(path.join(product, "产品事实.md"), doc(fullName));
+      await writeFile(path.join(product, "图片索引.csv"), baseCsv.replaceAll(name, fullName));
+      for (let i = 0; i < 4; i++) await writeFile(path.join(product, "图片", `synthetic-${i}.png`), await readFile(path.join(f.product, "图片", `synthetic-${i}.png`)));
+      const result = await retrieveLocalEvidence(request(fullName), f.services, { rootDir: f.root });
+      assert.equal(result.evidence.product.displayName, fullName);
+      assert.equal(result.assets.length, 4);
+      assert.equal(result.evidence.conflicts.length, 0);
+      if (folder !== fullName) await assert.rejects(retrieveLocalEvidence(request(folder), f.services, { rootDir: f.root }), errorCode("MODEL_AMBIGUOUS"));
+    }
+    const catalog = await readLocalCatalog({ rootDir: f.root });
+    assert.equal(catalog.products.length, 7);
+    for (const [, fullName] of mappings) assert.ok(catalog.products.some(product => product.productRequest === fullName && product.imageCount === 4));
+    for (const near of ["HUAWEI MateBook D 16 2025", "HUAWEI MateBook GT 16", "HUAWEI MateBook X Pro 2024", "HUAWEI MateBook D 14 Pro 2024"]) await assert.rejects(retrieveLocalEvidence(request(near), f.services, { rootDir: f.root }), errorCode("MODEL_AMBIGUOUS"));
+    const seriesProduct = path.join(f.root, "P1-产品参数库", "02-MateBook-Windows", "MateBook GT 系列");
+    await writeFile(path.join(seriesProduct, "产品事实.md"), doc("HUAWEI MateBook GT 16"));
+    assert.ok(!(await readLocalCatalog({ rootDir: f.root })).products.some(product => product.displayName === "HUAWEI MateBook GT 16"));
+  } finally { await f.cleanup(); }
+});
+test("synthetic local: empty LOCAL_KB_ROOT behaves as unconfigured, never as cwd", () => {
+  const cwd = path.resolve(".local-evidence/delivery/artificial-project");
+  const fallback = path.join(cwd, "华为PC全板块深度知识库_v7");
+  assert.equal(localRootPath({}, "", cwd), fallback);
+  assert.equal(localRootPath({}, "   ", cwd), fallback);
+  assert.equal(localRootPath({ rootDir: "" }, "", cwd), fallback);
+  assert.equal(localRootPath({ rootDir: path.join(cwd, "explicit") }, "", cwd), path.join(cwd, "explicit"));
 });

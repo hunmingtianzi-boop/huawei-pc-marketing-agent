@@ -68,7 +68,7 @@ export function extractFacts(document: string, productKey: string, displayName: 
   }
   // The entire document remains private; only model tokens necessary to detect
   // a near-model contamination are inspected here.
-  const mentioned = [...document.matchAll(/(?:HUAWEI\s+)?MateBook\s+(?:X\s+Pro|D\s+\d+|\d+(?:\s+Pro)?|Pro(?:\s+S)?|Fold\s*非凡大师)(?:\s+20\d{2})?(?:（(?:鸿蒙|Windows)版）)?/gi)].map(m => modelBase(m[0]).replace(/^HUAWEI\s+/i, ""));
+  const mentioned = [...document.matchAll(/(?:HUAWEI\s+)?MateBook\s+(?:X\s+Pro|D\s+\d+|GT\s+\d+|\d+(?:\s+Pro)?|Pro(?:\s+S)?|Fold\s*非凡大师)(?:\s+(?:SE\s*版|酷睿\s*Ultra|微绒典藏版|20\d{2}))*(?:（(?:鸿蒙|Windows)版）)?/gi)].map(m => modelBase(m[0]).replace(/^HUAWEI\s+/i, ""));
   const target = modelBase(displayName).replace(/^HUAWEI\s+/i, "");
   if (mentioned.some(name => name.toLowerCase() !== target.toLowerCase())) {
     for (const fact of facts) fact.status = "conflicted";

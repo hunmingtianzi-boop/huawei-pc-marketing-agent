@@ -21,8 +21,11 @@ const rejected = () => new ImaError("MEDIA_UNAVAILABLE", true, "本地素材路�
 const isMissing = (e: unknown) => e instanceof Error && "code" in e && ["ENOENT", "ENOTDIR"].includes(String(e.code));
 
 /** Only a server-owned root is accepted; no request field is used as a path. */
+export function localRootPath(options: LocalSourceOptions = {}, configuredRoot = process.env.LOCAL_KB_ROOT, cwd = process.cwd()) {
+  return path.resolve(options.rootDir?.trim() || configuredRoot?.trim() || path.join(cwd, "华为PC全板块深度知识库_v7"));
+}
 async function sourceRoot(options: LocalSourceOptions) {
-  const configured = path.resolve(options.rootDir ?? process.env.LOCAL_KB_ROOT ?? path.join(process.cwd(), "华为PC全板块深度知识库_v7"));
+  const configured = localRootPath(options);
   const info = await lstat(configured);
   if (info.isSymbolicLink() || !info.isDirectory()) throw rejected();
   return realpath(configured);
@@ -77,13 +80,27 @@ type Product = { parts: string[]; imageDirectory: string | null; displayName: st
 function heading(document: string) {
   return document.split(/\r?\n/).find(line => /^#\s+/.test(line))?.replace(/^#\s+/, "").replace(/ - 产品事实$/, "").trim();
 }
+const withoutBrand = (name: string) => name.replace(/^HUAWEI\s+/, "");
+// Explicit series aliases are taken from the main agent's supplied local
+// structure evidence; they never authorize a fuzzy request-to-product match.
+const WINDOWS_SERIES: Record<string, string> = {
+  "MateBook GT 系列": "HUAWEI MateBook GT 14",
+  "MateBook X系列": "HUAWEI MateBook X Pro 酷睿 Ultra 微绒典藏版",
+};
+function directoryAcceptsTitle(category: string, folder: string, title: string) {
+  if (category === CATEGORIES[0]) return title === folder || title === `${folder}（鸿蒙版）`;
+  const series = WINDOWS_SERIES[withoutBrand(folder)];
+  if (series) return title === series;
+  const normalizedFolder = withoutBrand(folder);
+  const normalizedTitle = withoutBrand(title).replace(/（Windows版）$/, "");
+  return normalizedTitle === normalizedFolder || /^20\d{2}$/.test(normalizedTitle.slice(normalizedFolder.length + 1)) && normalizedTitle.startsWith(`${normalizedFolder} `);
+}
 async function loadProduct(root: string, category: string, folder: string): Promise<Product> {
   const parts = [P1, category, folder];
   const documentBytes = await readBounded(root, [...parts, "产品事实.md"], DOC_LIMIT);
   const document = text(documentBytes);
   const displayName = heading(document);
-  const qualified = category === CATEGORIES[0] ? `${folder}（鸿蒙版）` : `${folder}（Windows版）`;
-  if (!displayName || displayName !== folder && displayName !== qualified) throw new ImaError("MODEL_PARAMETER_MISMATCH", false, "本地产品原文标题与所在精确型号目录不一致。");
+  if (!displayName || !directoryAcceptsTitle(category, folder, displayName)) throw new ImaError("MODEL_PARAMETER_MISMATCH", false, "本地产品原文标题与所在精确型号目录不一致。");
   // System qualifiers must agree with the explicit system category.
   if (category === CATEGORIES[1] && /鸿蒙版/.test(displayName) || category === CATEGORIES[0] && /Windows版/i.test(displayName)) throw new ImaError("MODEL_PARAMETER_MISMATCH");
   const indexBytes = await readBounded(root, [...parts, "图片索引.csv"], DOC_LIMIT);
@@ -160,10 +177,10 @@ export async function retrieveLocalEvidence(request: RetrievalRequest, services:
     for (const directory of directories) {
       // Exact directory identities only; display suffixes may be explicit
       // HarmonyOS/Windows qualifiers, never Pro/year substring matching.
-      if (![directory.folder, `${directory.folder}（鸿蒙版）`, `${directory.folder}（Windows版）`].includes(requested)) continue;
+      if (!directoryAcceptsTitle(directory.category, directory.folder, requested)) continue;
       const product = await loadProduct(root, directory.category, directory.folder);
       if (requested === product.displayName) exactMatches.push(product);
-      else if (requested === directory.folder) directoryAliases.push(product);
+      else if (directory.category === CATEGORIES[0] && requested === directory.folder) directoryAliases.push(product);
     }
     const matches = exactMatches.length ? exactMatches : directoryAliases;
     if (matches.length !== 1) throw new ImaError("MODEL_AMBIGUOUS", true, "本地资料中未找到唯一精确型号，请从本地产品列表选择完整型号。");
