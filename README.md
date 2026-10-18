@@ -1,6 +1,6 @@
 # 华为 PC 营销智能体
 
-源码仓库：[hunmingtianzi-boop/huawei-pc-marketing-agent](https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent)（私有，需访问权限）。本机交付1的实际验收、安全证据及未完成项见 [STATUS](docs/STATUS.md) 和 [交付记录](docs/evidence/delivery-2026-10-18.json)。
+源码仓库：[hunmingtianzi-boop/huawei-pc-marketing-agent](https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent)（按用户要求公开）。本机交付1的实际验收、安全证据及未完成项见 [STATUS](docs/STATUS.md) 和 [交付记录](docs/evidence/delivery-2026-10-18.json)。仓库公开不等于应用已部署。
 
 默认从本机 `华为PC全板块深度知识库_v7/` 读取已授权原文与图片（local，不耗ima额度），调用现有实际模型；保留可选ima live路径。三平台提供各自的模拟预览和离线图文HTML导出，未发布。完整操作见 [本机使用说明](docs/USER_GUIDE.md)。
 

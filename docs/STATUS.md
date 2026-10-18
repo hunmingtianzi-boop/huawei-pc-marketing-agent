@@ -1,5 +1,11 @@
 # 当前状态与交接
 
+## 最新模型配置（2026-10-18）
+
+- 用户指定 DeepSeek Flash，当前本机 `.env.local` 的 `LLM_MODEL=deepseek-v4-flash`，沿用原服务与凭证。该路由已在实际模型列表中确认；名称不代表底层实现认证。
+- 已重启 http://127.0.0.1:3210/ 生产预览；实际 `POST /api/model` 返回 HTTP 200、live PASS、model=deepseek-v4-flash（08:32:00Z）。证据：`.local-evidence/model-switch/deepseek-flash-http-probe.json`。生成和语义核验共用该配置；本次未重跑完整业务验收，以下历史 gpt-4.1 成果不作为 Flash 验收证据。
+- 分支 `codex/stage2`，本轮基线 `645dc7e15c7f5f7405bc0ff61037a2bcdf1c3017`；本次仅修改本地配置和交接文档，未委派子任务、未新增依赖；保留任务板中其他工作的记录。下一步可直接在页面新建 Flash 任务验证完整图文流程；既有 G4 限制保留。未推送或重打交付包。
+
 2026-10-18，本轮为**本机交付1**：用户授权本地素材、不走ima API；三平台模拟预览和图文HTML已交付。G2 PASS、G3-local PASS；独立代码/材料复核PASS。G4整体仍BLOCKED：离线file直接打开受客户端策略限制，正式连续视频和外链未完成；不以local冒充fresh ima。
 
 ## 基线、代码和启动
@@ -50,6 +56,7 @@ dist/delivery-1/source.zip：可公开审阅的跟踪源码与说明，无凭证
 - 原G1真实ima PASS；第二阶段G3-ima部分通过、fresh与另一型号受220021当日额度BLOCKED的结论保留，见docs/evidence/stage2-2026-10-18.json及Git 5b91180的STATUS。本轮不请求ima，不声称额度恢复；local已补另一型号业务对照。
 - 正式连续Demo视频未录制；当前浏览器API无连续录屏入口，DEMO.md已给脚本，截图不冒充视频。
 - 内置浏览器实际拒绝file协议，未绕过策略；HTML直接离线打开的客户端视觉验收BLOCKED，文件/字节/嵌图已验证。此项和视频、外链保持未完成，不把G4整体标PASS。
-- 用户随后授权直接创建GitHub仓库，已创建私有仓库 https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent ，origin已配置；源码推送与远端SHA核对在交付收尾执行。仓库不等于公开部署或评审已授权可见。魔搭链接和赛事提交仍未完成，见SUBMISSION.md。
+- 用户授权创建仓库并随后明确要求public，GitHub已确认PUBLIC/isPrivate=false：https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent 。本机github.com:443连接失败，普通git push超时；改用GitHub官方Git Data API已完整同步36项源码提交，逐树/逐提交哈希一致，main实测645dc7e15c7f5f7405bc0ff61037a2bcdf1c3017与本地基准一致。后续交接文档提交同样经官方API同步并核对；origin/main引用按真实API结果登记，本地分支保持codex/stage2。仓库公开不是应用已部署；魔搭与赛事提交仍未完成。
 - 本机单用户/单Node进程，没有公网认证、多用户/多进程锁；海报不在首版范围。不是平台发布或一键导入服务。
 - 新机需配置模型并提供有权限的原始知识库；源码包不携带凭证或完整资料。local快照不证明官网当前事实或fresh ima，正式赛事来源要求仍按赛题确认。
+- 10个型号仅目录/候选图片扫描全部通过；端到端成稿实际验证14与Pro S，D16用于图片不足分支，其余型号成稿未逐一验证。GitHub公开属性/源码引用以API为证，本机github.com网页/Git传输仍受网络限制，不把API上传描述成普通git push成功。

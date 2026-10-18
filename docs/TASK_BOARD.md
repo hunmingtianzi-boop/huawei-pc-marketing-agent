@@ -1,5 +1,11 @@
 # 主控任务板
 
+## 模型配置调整（2026-10-18）
+
+- 主控单写，基线 `645dc7e`，无子任务。用户最终指定 Flash：本机模型改为 `deepseek-v4-flash`，沿用服务与密钥；配置保持 Git 忽略、0600。
+- PASS：服务模型列表含该路由；生产预览已重启；实际 `POST /api/model` HTTP 200 / live PASS。证据 `.local-evidence/model-switch/deepseek-flash-http-probe.json`。无需源码或依赖修改。
+- 未重跑完整业务验收，旧成果保留原模型标识；下一步可在页面创建 Flash 任务验证生成和独立核验。未推送或重打交付包。
+
 第二阶段唯一主控 `/root`，分支 `codex/stage2`。接续基线 `9bbb976`，第一阶段验证源码 `554ddba873fb606a9bacd1169ff45d0312b4ba6d`，G1 PASS。接入1.0.0不变，新增业务2.0.0；先提交统一基线 `6d01f360c92e103f3781578d5a16ff8344b5d715`，再派工。
 
 | ID | 任务 | 状态 | 实际证据 |
@@ -58,3 +64,13 @@ worktree保留已提交交付快照，安装用node_modules符号链接已移除
 - /root/review_delivery：新上下文，只读UI/交付；初审异步编辑覆盖P2和HTML位置P3，e79b9e0后40项及复核PASS，completed。
 - 三份完整reviewer TOML与任务单见忽略的.local-evidence/delegations/DELIVERY-REVIEW-*.md，报告仅写各自review-*目录；未读秘密/原始私有材料、未调用实际模型/ima、未操作主浏览器。
 - 主控已完成最终150项/tsc/build、干净安装/构建、安全扫描、浏览器改稿导出与四组最终当前稿实际模型重验。没有待集成worker提交。主控仅交接文档/打包收尾，无并行写入。
+- 三个delivery工作树源码均clean，临时node_modules符号链接已移除，保留已提交快照。GitHub仓库按后续用户要求公开，全部源码历史通过官方Git Data API同步，未上传本地原库/凭证/运行图文示例。
+
+## UI 多页面改版（2026-10-18）
+
+- 主控 /root；基线645dc7e；业务契约2.1.0 / 接入1.0.0冻结，不调整API。
+- UI-MULTIPAGE：ui_engineer，独立worktree `/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/ui-multipage`，分支codex/ui-multipage。拥有src/app/**（排除api）、src/components/**、src/styles/**、tests/ui/**。主控本轮不同时修改这些源码。
+- 目标：首页、创作中心、任务记录、资料与设置真实路由；华为官网启发的克制白灰红版式；保留核验、修订失效、来源与导出门槛。只读官网用于设计调研，不用于产品事实。
+- 主控负责设计参考、真实浏览器检查、根配置及文档；私有证据写.local-evidence/ui-multipage/。实现完成后顺序审查集成，再启动只读review。
+- 当前状态：IN PROGRESS。无对外发布/提交动作。
+- UI-REVIEW：/root/ui_review，只读主目录，base645dc7e，先审计状态保护与测试验收清单；稳定集成后独立复核。仅可写.local-evidence/ui-multipage/review/报告与临时产物。

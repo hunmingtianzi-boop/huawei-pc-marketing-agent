@@ -6,6 +6,6 @@
 
 公开源码包应仅含跟踪源码与文档。不得加入.env.local、inputs、vendor、原始全库、运行响应、私有原图和本机HTML样例。首次启动依赖本机可用模型配置和有权使用的知识库原件；仅源码下载不代表已有服务可运行。
 
-用户已授权创建GitHub仓库，实际私有仓库为 https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent 。origin已配置，最终源码按STATUS推送核对；私有仓库需要单独向评审授权，不能宣称匿名可见。
+用户已授权创建并要求公开GitHub仓库，实际地址为 https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent ，GitHub已返回PUBLIC/isPrivate=false。origin已配置，源码及历史上传与远端提交以STATUS核对结果为准；仓库公开不代表应用已部署。
 
 待对外动作：建立魔搭项目/部署、核对评审权限与链接、录制连续真实Demo、按组委会入口提交。没有编造这些链接，也不宣称已公开部署或已参赛提交。公开部署前需补认证、持久化及多用户隔离。本轮用户指定local替代ima API；正式赛事对ima来源与现场调用的要求仍需按赛题确认，不以本地替代证明fresh ima。

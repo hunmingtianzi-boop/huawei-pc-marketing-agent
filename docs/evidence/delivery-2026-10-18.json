@@ -306,6 +306,24 @@
     {
       "path": ".local-evidence/delivery/review-delivery/RECHECK-e79b9e0.md",
       "sha256": "cebb9f1fb86eea5dd4bec2391195e934f3eb10aaf47cd40a45208e08969b6813"
+    },
+    {
+      "path": ".local-evidence/delivery/github.json",
+      "sha256": "17d933f658d2b6fc2dbe43a631ef8af12cdf59d43e0002d4e429ca0e253fe18b"
     }
-  ]
+  ],
+  "github": {
+    "at": "2026-10-18T08:34:59.663508+00:00",
+    "repository": "https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent",
+    "visibility": "PUBLIC",
+    "transport": "GitHub official REST Git Data API (git HTTPS unreachable)",
+    "localHead": "645dc7e15c7f5f7405bc0ff61037a2bcdf1c3017",
+    "remoteHead": "645dc7e15c7f5f7405bc0ff61037a2bcdf1c3017",
+    "historyCommitsImported": 36,
+    "uniqueSourceBlobs": 269,
+    "commitAndTreeHashesIdentical": true,
+    "status": "PASS",
+    "privateMaterialsUploaded": false,
+    "visibilityVerifiedAt": "2026-10-18T08:38:36.089784+00:00"
+  }
 }
