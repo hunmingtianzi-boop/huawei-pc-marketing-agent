@@ -114,6 +114,9 @@ test("synthetic fixture: mode is explicit, four images truly decode without any 
   assert.equal(result.evidence.provenanceMode, "synthetic");
   assert.equal(result.evidence.images.length, 4);
   assert.ok(result.evidence.product.resolutionBasis.includes("人工"));
+  assert.ok(result.evidence.sources.every(source => source.reviewAccess === "available"));
+  assert.ok(result.evidence.images.every(image => image.sourceView.reviewAccess === "available" && image.sourceView.sourceTitle.includes("非 ima")));
+  assert.ok(result.documents.every(document => document.title.includes("人工构造")));
   assert.equal(new Set(result.evidence.images.map(i => i.contentDigest)).size, 4);
   for (const asset of result.assets) assert.ok((await decodeImage(Buffer.from(asset.bytes), asset.mimeType)).width > 0);
 });
