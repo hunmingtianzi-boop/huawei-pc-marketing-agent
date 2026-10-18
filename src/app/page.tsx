@@ -1,9 +1,11 @@
 import ConnectionPanel from "@/components/connection-panel";
+import MarketingWorkbench from "@/components/marketing-workbench";
 export default function Page() {
   return <main>
-    <header className="masthead"><span className="brand"><i /> PC 内容工作台</span><span className="phase">第一阶段 / 接入检查</span></header>
-    <section className="intro"><p className="eyebrow">华为 PC · 营销智能体</p><h1>让每一句卖点，<br />都有据可查。</h1><p className="lede">先连接指定知识库，确认产品资料与图片。内容策略、图文生成与成稿导出将在后续阶段开放。</p></section>
-    <ConnectionPanel />
-    <footer>本机单用户预览 · 知识库只读 · 真实接入通过后再进入内容制作</footer>
+    <header className="masthead"><span className="brand"><i /> PC 内容工作台</span><span className="phase">第二阶段 / 图文与核验</span></header>
+    <section className="intro"><p className="eyebrow">华为 PC · 营销智能体</p><h1>从真实依据，<br />到可核验的表达。</h1><p className="lede">确定人群与场景，读取 ima 产品资料和图片，生成适合渠道的内容。每次修改都需重新核验，导出由服务端把关。</p></section>
+    <MarketingWorkbench />
+    <details className="connection-details"><summary>资料接入检查 · 单份原文与单张图</summary><ConnectionPanel /></details>
+    <footer>本机单用户工作台 · ima 资料只读 · 图片与产品事实均须有来源依据 · 导出不代表已发布</footer>
   </main>;
 }
