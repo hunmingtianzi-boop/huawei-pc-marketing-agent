@@ -7,8 +7,9 @@ import { modelPayload } from "../workflow";
 import { runtimePrompt } from "../workflow/prompts";
 
 const normalized = (s: string) => s.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
-const digits = (s: string) => [...s.normalize("NFKC").replace(/(?:^|\n)\s*\d+[.、)]/g, "").matchAll(/\d+(?:\.\d+)?/g)].map(x => x[0]);
-const numberClaims = (s: string) => [...s.normalize("NFKC").matchAll(/\d+(?:\.\d+)?\s*(?:GHz|MHz|TB|GB|MB|kg|g|mm|cm|mAh|Wh|W|Hz|nits|nit|h|K|英寸|寸|小时|分钟|千克|克|毫米|厘米|元|%|倍|万|亿|个接口|核)/gi)].map(x => normalized(x[0]));
+const withoutReferences = (s: string) => s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "");
+const digits = (s: string) => [...withoutReferences(s).normalize("NFKC").replace(/(?:^|\n)\s*\d+[.、)]/g, "").matchAll(/\d+(?:\.\d+)?/g)].map(x => x[0]);
+const numberClaims = (s: string) => [...withoutReferences(s).normalize("NFKC").matchAll(/\d+(?:\.\d+)?\s*(?:GHz|MHz|TB|GB|MB|kg|g|mm|cm|mAh|Wh|W|Hz|nits|nit|h|K|英寸|寸|小时|分钟|千克|克|毫米|厘米|元|%|倍|万|亿|个接口|核)/gi)].map(x => normalized(x[0]));
 
 export async function validateDraft(context: ValidationContext, model: ModelClient): Promise<ValidationReport> {
   const { draft, evidence, brief, strategy } = context;
@@ -40,7 +41,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
       if (!fact || fact.status !== "supported" || fact.productKey !== evidence.product.productKey) { add("UNSUPPORTED_CLAIM", "fact", block.blockKey, "正文引用不存在、未确认或错配型号的事实。", [], "retrieve"); continue; }
       for (const qualifier of fact.qualifiers) if (!normalized(block.text).includes(normalized(qualifier))) add("FACT_QUALIFIER_MISSING", "fact", block.blockKey, `事实引用需要保留限制条件：${qualifier}`, fact.sourceIds);
     }
-    if (!block.factIds.length && /支持|搭载|采用|配备|拥有|具备|分辨率|处理器|续航|重量|轻至|薄至|屏幕|接口/.test(block.text)) add("SOURCE_MISSING", "fact", block.blockKey, "产品事实陈述需要绑定对应事实引用。", [], "retrieve");
+    if (!block.factIds.length && /^(?:支持|搭载|采用|配备|拥有|具备)|(?:该(?:机|电脑|产品)|本(?:机|电脑|产品)|这(?:款|台)|HUAWEI|MateBook).{0,30}(?:支持|搭载|采用|配备|拥有|具备)|(?:产品|屏幕|处理器|续航|重量|接口).{0,12}(?:为|是|使用|采用|支持|配备|约|：)/i.test(block.text)) add("SOURCE_MISSING", "fact", block.blockKey, "产品事实陈述需要绑定对应事实引用。", [], "retrieve");
     const blockBasis = block.factIds.map(id => facts.get(id)).filter(Boolean).map(f => `${f!.supportedStatement} ${f!.value} ${f!.unit || ""} ${f!.qualifiers.join(" ")}`).join(" ");
     const validNumbers = new Set(numberClaims(`${blockBasis} ${evidence.product.displayName}`));
     for (const numeric of numberClaims(block.text)) if (!validNumbers.has(numeric)) add("UNSUPPORTED_NUMBER_OR_UNIT", "fact", block.blockKey, "正文包含引用事实不支持的数值或单位。", block.factIds.flatMap(id => facts.get(id)?.sourceIds || []));
@@ -54,6 +55,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
   const approvedNumbers = new Set(numberClaims(`${basis} ${evidence.product.displayName}`));
   const approvedDigits = new Set(digits(`${basis} ${evidence.product.displayName}`));
   for (const [location, value] of visible) {
+    if (withoutReferences(value)!==value) add("REFERENCE_IN_VISIBLE_TEXT", "compliance", location, "事实标识仅应放在factIds，不得写入可见文案。", [], "remove");
     if (/(?:行业|全网|全球|世界|销量)?第[一1]|最强|最佳|顶级|遥遥领先|百分百|100%\s*(?:成功|满意|安全|无误|保证|不卡|流畅|适合|兼容)|保证(?:成功|结果|不卡|流畅)|绝不|永不|吊打|碾压|竞品垃圾/.test(value)) add("PROHIBITED_MARKETING_CLAIM", "compliance", location, "删除绝对化、虚假保证或无依据对比贬低表述。", [], "remove");
     if (/亲测|我(?:实测|用了|用过|体验)|使用一周|实测(?:跑分|续航|结果)|用户(?:一致|都说|评价)|好评率/.test(value)) add("FABRICATED_EXPERIENCE", "compliance", location, "不得编造亲测、软件实测或用户评价。", [], "remove");
     if (/价格|售价|到手价|仅售|只要\d|\d\s*元|补贴|优惠|立减|库存|现货|赠送|权益/.test(value) && !supportedFacts.some(f => /价格|售价|补贴|优惠|库存|赠送|权益/.test(`${f.fieldKey} ${f.supportedStatement}`) && normalized(value).includes(normalized(f.supportedStatement)))) add("UNSUPPORTED_PRICE_OR_BENEFIT", "compliance", location, "价格、补贴、库存或权益缺乏本次可引用依据，应删除或改为咨询适用性。", [], "remove");

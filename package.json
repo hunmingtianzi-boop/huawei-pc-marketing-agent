@@ -11,7 +11,9 @@
     "verify:ima": "tsx scripts/verify_ima_connection.ts",
     "verify:http": "tsx scripts/verify_http.ts",
     "verify:model": "tsx scripts/verify_model.ts",
-    "verify:business-evidence": "tsx scripts/verify_business_evidence.ts"
+    "verify:business-evidence": "tsx scripts/verify_business_evidence.ts",
+    "verify:business-http": "tsx scripts/verify_business_http.ts",
+    "verify:live-controls": "tsx scripts/verify_live_controls.ts"
   },
   "engines": {
     "node": ">=20.9.0"

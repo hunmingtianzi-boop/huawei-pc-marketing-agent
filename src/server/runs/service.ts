@@ -49,7 +49,7 @@ export function createRunService(deps:Services){
     await update(run=>{run.strategy=strategy;});
     await stage("retrieving","正在只读获取产品原文、事实与型号图片。");
     const cached=current.evidence;
-    const reusable=cached && cached.provenanceMode===current.mode && cached.snapshotDigest===evidenceDigest(cached) && Date.now()-Date.parse(cached.retrievedAt)<24*60*60*1000;
+    const reusable=operation==="regenerate" && cached && !cached.conflicts.length && !cached.facts.some(f=>f.status==="conflicted") && cached.facts.some(f=>f.status==="supported") && cached.provenanceMode===current.mode && cached.snapshotDigest===evidenceDigest(cached) && Date.now()-Date.parse(cached.retrievedAt)<24*60*60*1000;
     let retrieved:Awaited<ReturnType<RuntimeModules["retrieveEvidence"]>>;
     if(reusable){
      const assets=[];for(const image of cached.images){const asset=await readRunAsset(repo.directory(id),current,image.imageId);assets.push({imageId:image.imageId,bytes:asset.bytes,mimeType:asset.mimeType});}
@@ -105,8 +105,8 @@ export function createRunService(deps:Services){
     if(run.activeOperationId)throw new BusinessError("RUN_BUSY","当前任务正在执行；修改任务可使旧操作失效。",409);
     if(run.brief.missingFields.length){run.state="needs_input";return run;}
     if(action.action==="revalidate"&&(!run.draft||!run.evidence||!run.strategy))throw new BusinessError("DRAFT_MISSING","当前没有可重新核验的草稿。",409);
-    if(action.action==="execute"&&!["draft","needs_input","blocked","failed"].includes(run.state))throw new BusinessError("ACTION_INVALID","请使用重新生成或重新核验。",409);
-    invalidate(run);if(action.action==="regenerate"){run.currentVersion++;run.draft=null;}
+    if(action.action==="execute"&&!["draft","needs_input","blocked","failed","ready","needs_revision"].includes(run.state))throw new BusinessError("ACTION_INVALID","请使用重新生成或重新核验。",409);
+    const hadContent=!!run.draft;invalidate(run);if(action.action==="regenerate"||action.action==="execute"&&hadContent){run.currentVersion++;run.draft=null;}
     if(action.action!=="revalidate"){run.draft=null;run.strategy=null;run.executionEvidence={retrievalMode:run.mode,generationMode:"not_run",modelInvoked:false,model:null,endpointOrigin:null};}
     run.issues=[];run.activeOperationId=randomUUID();run.state=action.action==="revalidate"?"validating":"planning";
    }

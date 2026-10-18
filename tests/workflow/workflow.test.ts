@@ -140,3 +140,13 @@ test("live-discovered explicit Pro and Fold names enter retrieval without invent
 });
 
 test("moments generation narrows facts but edited draft verification keeps full supported context",()=>{const context=fixture();assert.equal(modelPayload(context,"generate").facts.length,1);assert.equal(modelPayload(context,"verify").facts.length,context.evidence.facts.length);});
+
+test('general software requirement question needs no invented citation, product assertion and visible UUID do',async()=>{
+ const context=fixture('xiaohongshu');const draft=(await generateDraft(context,synthetic)).draft;
+ const general=edited(draft,x=>x.bodyBlocks.unshift({blockKey:'decision',text:'选购前先核对是否需要特定系统支持，并整理课程要求。',factIds:[]}));
+ // Keep block keys unique in this test fixture.
+ general.bodyBlocks=general.bodyBlocks.filter((b,i,a)=>a.findIndex(x=>x.blockKey===b.blockKey)===i);general.contentDigest=contentDigest(general);
+ assert.equal((await validateDraft({...context,draft:general},synthetic)).status,'passed');
+ const assertion=edited(draft,x=>{x.bodyBlocks[0].text='该电脑支持全部课程软件。';x.bodyBlocks[0].factIds=[];});assert.ok((await validateDraft({...context,draft:assertion},synthetic)).issues.some(i=>i.code==='SOURCE_MISSING'));
+ const referenced=edited(draft,x=>x.title+=' '+context.evidence.facts[0].factId);assert.ok((await validateDraft({...context,draft:referenced},synthetic)).issues.some(i=>i.code==='REFERENCE_IN_VISIBLE_TEXT'));
+});
