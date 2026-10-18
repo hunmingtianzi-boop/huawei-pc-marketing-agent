@@ -1,6 +1,6 @@
 # 内部数据契约与状态流程
 
-状态：**我们设计的内部草案，尚未冻结，应用尚未开发。本文不是 ima OpenAPI 原始 schema，也不表示接口已经接通。** 首个主对话取得真实原文及型号可证图片后，核对样本、明确字段映射，由主控冻结首版。真实 provider 结构的调研说明见 [IMA_RESEARCH.md](IMA_RESEARCH.md)。
+状态：**首轮接入契约 v1.0.0 已按 2026-10-18 live 原文、目录与图片样本冻结**。`src/contracts/index.ts` 为已实现 schema 的唯一来源。本文后续完整营销运行结构仍是第二阶段设计，不能当作运行功能；详细冻结边界与真实映射见文末第 10 节。
 
 ## 1. 契约边界与修改责任
 
@@ -259,3 +259,25 @@
 
 - **R1**：用户提供《华为·产业进阶赛道·赛题手册v4(1).pdf》，第 4–5 页平台、输出和冲突处理，第 6–7 页接入与安全，第 9 页扣分及统一任务。
 - **R2**：[ima 官方 Skill 1.1.10 下载包](https://app-dl.ima.qq.com/skills/ima-skills-1.1.10.zip)，包内 `knowledge-base/references/api.md` 的数据结构、知识库搜索/列表、媒体信息章节及 `knowledge-base/SKILL.md` 的文件夹、原文访问和展示规则。仅完成静态核对；内部字段、状态与版本设计由本项目提出。
+
+
+## 10. 第一阶段冻结记录（2026-10-18）
+
+版本：`1.0.0`。已实现：模式/状态/错误、ProductSelection、SourceView、FactPoint、ImageView、TaskBrief、ContentStrategy、RunState 枚举、ProbeInput、ProbeStage、ProbeReport。接入报告额外绑定 `product`（包含实际系统版本），安全 ImageView 包含 `fileName`；PASS 要求七步均实际执行且通过、真实来源和可解码型号图片存在、图片与产品键一致。完整 RunResult / DraftContent / ValidationReport / ProductEvidence 的运行实现仍属阶段二，主控须先按本文补齐相应代码 schema 和 HTTP 端点，再分发依赖该部分的 worker。
+
+已固定的 HTTP 边界：`GET /api/health`、`GET/POST /api/connection`、`GET /api/assets/[imageId]`。POST 仅接受严格 `{ productName: string }`，输出严格安全 ProbeReport；图片仅允许最新报告关联的内部 UUID，同源本机访问并复核文件摘要。raw、provider ID、访问 URL/headers 与完整原文不进入响应。域名/路径、凭证及缓存均只在服务端。
+
+| 实测 | Adapter 规则及边界 |
+| --- | --- |
+| 库搜索返回 `kb_id/kb_name` | 精确匹配指定名称；兼容有文档依据的 `id/name`，同时冲突即失败 |
+| 根目录为同名包装文件夹 | 展开实际文件夹，之后限定 P1；不扫描其它库正文 |
+| 目录及搜索文件夹为 `media_id/title/media_type=99` | 已真实打开并与返回的 `current_path[].folder_id` 核对一致；FolderInfo 的 folder_id/name 另行归一化 |
+| get_knowledge_list 有 is_end/next_cursor/current_path | 布尔分页、重复游标/预算保护；面包屑不当作条目列表 |
+| search_knowledge 样本只有 info_list | 仅该方法接受缺少两个分页字段的单响应形式；不声称搜索穷尽全库；字段半缺失仍失败 |
+| 同名型号命中多个业务板块 | 通过包装目录/P1/系统目录精确定位，不盲选首个搜索结果；空搜索也走该回退路径 |
+| 实际文章为 产品事实.md | 原文标题明确为 HUAWEI MateBook 14（鸿蒙版） - 产品事实；只解析该明确编辑后缀及显式系统限定，不把 Pro/年份等相近型号混入 |
+| 原文无内嵌图片 | 读取同型号目录的图片索引.csv；按产品型号精确匹配，单独从 images 目录取同名 ima 媒体；索引外部 URL 不下载 |
+| 图片索引含 BOM、文件名/产品型号/宽高/说明等 | 专用 CSV parser 校验结构、型号、重复记录、路径和尺寸；实际图片 type=9，完整解码与尺寸比对后才 verified |
+| 成功原件访问需要 URL+headers | 请求只来自服务端真实访问方式；限制公网媒体域名、协议、体积、MIME和重定向，不附加 ima 主凭证 |
+
+样本来源、时间、安全结果及证据路径统一见 `docs/evidence/foundation-2026-10-18.json` 和 `docs/STATUS.md`。完整原文、图片索引、图片及真实 raw 仅留忽略的私有目录。本次通过不证明所有型号、笔记、内嵌图分支或未来协议均已验证。

@@ -1,0 +1,61 @@
+{
+  "phase": "foundation",
+  "checkedAt": "2026-10-18T06:31:16.117Z",
+  "codeCommit": "554ddba873fb606a9bacd1169ff45d0312b4ba6d",
+  "branch": "codex/foundation",
+  "contractVersion": "1.0.0",
+  "gates": {
+    "G1": "PASS",
+    "G2": "NOT_RUN",
+    "G3": "NOT_RUN",
+    "G4": "NOT_RUN"
+  },
+  "checks": {
+    "syntheticTests": {
+      "passed": 30,
+      "failed": 0
+    },
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "localHttp": {
+      "passed": 12,
+      "failed": 0,
+      "liveGate": "PASS"
+    },
+    "browser": "PASS (readable source locator and controlled image displayed)",
+    "independentReview": "PASS (F08; synthetic/typecheck/safe report only)"
+  },
+  "live": {
+    "status": "PASS",
+    "mode": "live",
+    "reportId": "b35c79cc-d20f-4f3d-ac89-bb0a4706c9ee",
+    "product": "HUAWEI MateBook 14（鸿蒙版）",
+    "sourceLocator": "产品事实.md / 一级标题与正文",
+    "sourceContentSha256": "5101ff448d12cc7c70319845c3f74923656426dce7ab18fb150fda5bd17cab1f",
+    "image": {
+      "fileName": "hwpc_matebook-14-harmonyos_原野绿多彩配色_04.png",
+      "width": 817,
+      "height": 892,
+      "mimeType": "image/png",
+      "sha256": "9f9470747d7e3c406b87c31ecd5d51f1f3542626001ed8b00b04c5db8973de82",
+      "modelBasis": "same-model ima image-index CSV exact model/file row + independent ima media bytes + dimensions"
+    },
+    "identityQuery": "NOT_VERIFIED"
+  },
+  "evidencePaths": {
+    "privateProbe": ".local-data/probes/b35c79cc-d20f-4f3d-ac89-bb0a4706c9ee",
+    "tests": ".local-evidence/foundation/tests.log",
+    "typecheck": ".local-evidence/foundation/typecheck.log",
+    "build": ".local-evidence/foundation/build.log",
+    "http": ".local-evidence/foundation/http.json",
+    "screenshot": ".local-evidence/foundation/browser-live-pass.png",
+    "review": ".local-evidence/reviewer/F08-REVIEW.md"
+  },
+  "limits": [
+    "one model, one image only",
+    "no live notebook or multiple-page response verification",
+    "no account nickname query",
+    "no runtime model call or stage-two marketing workflow",
+    "single-user loopback server; public/multi-user deployment not implemented"
+  ]
+}
