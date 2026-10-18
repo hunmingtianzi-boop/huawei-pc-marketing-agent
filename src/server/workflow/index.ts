@@ -5,6 +5,7 @@ import { DraftContent, DraftEditable, ProductEvidence, TaskInput, type Generatio
 import { contentDigest, evidenceDigest } from "../../contracts/digests";
 import { BusinessError } from "../runs/business-error";
 import { runtimePrompt } from "./prompts";
+import { platformWritingGuide } from "./platform-style";
 
 export function clarifyTask(input: TaskInput, meta: { taskId: string; briefVersion: number }): z.infer<typeof TaskBrief> {
   input = TaskInput.parse(input);
@@ -25,16 +26,26 @@ export function planContent(brief: z.infer<typeof TaskBrief>): z.infer<typeof Co
   const school = /新生|开学|校园|学生/.test(`${brief.useScenario} ${brief.targetAudience}`);
   const topics = travel ? [["便携与移动使用", "往返通勤与差旅先确认携带条件"], ["办公协作及兼容边界", "移动办公需先核对软件及连接适用范围"], ["显示与使用条件", "长期办公关注显示条件"]] : school ? [["学习应用与使用边界", "开学选购先确认课程软件与学习需求"], ["显示与阅读条件", "阅读资料需了解可证显示信息"], ["便携与日常携带", "校园日常关注携带条件"]] : [["任务适用性", "先核对场景需求与资料支持范围"], ["关键配置及条件", "根据证据排序，不预设参数"], ["使用与携带条件", "确认日常使用边界"]];
   const platform = brief.platform;
-  const outline = platform === "wechat_moments" ? [{ blockKey: "core", purpose: "围绕一个已证核心事实回应场景" }] : [{ blockKey: "scene", purpose: "场景问题与选购关注点" }, { blockKey: "facts", purpose: "有出处的事实与适用条件" }, { blockKey: "boundary", purpose: "使用边界与待咨询事项" }, { blockKey: "decision", purpose: "选购判断与下一步" }];
+  const outline = platform === "wechat_moments" ? [{ blockKey: "core", purpose: "一段社交短文：一个场景问题与一个已证核心事实，保留条件" }] : platform === "xiaohongshu" ? [
+    { blockKey: "scene", purpose: "清单开头：本次场景先核对什么，短句说明首条证据" },
+    { blockKey: "facts", purpose: "选购清单：另一项需求与对应事实，短句保留条件" },
+    { blockKey: "boundary", purpose: "选购清单：剩余需核对的配置、软件或携带问题，不推导体验" },
+    { blockKey: "decision", purpose: "可选的到手前核对清单，不重复事实或CTA" },
+  ] : [
+    { blockKey: "scene", purpose: "带小标题的场景分析：说明选购时先列哪些任务，结合首项资料保留条件" },
+    { blockKey: "facts", purpose: "带小标题的资料解读：展开两项相关事实，各自对应需求问题，不推导效果" },
+    { blockKey: "boundary", purpose: "带小标题的使用边界：解释配置与条件的适用范围，列出尚需咨询的问题" },
+    { blockKey: "decision", purpose: "可选的带小标题的决策步骤：根据上述依据安排核对次序" },
+  ];
   const min = IMAGE_COUNTS[platform].min;
   return ContentStrategy.parse({ strategyId: randomUUID(), briefVersion: brief.briefVersion,
     audienceProblem: travel ? "出差往返与移动办公时，如何先确认携带和工作需求的适用性？" : school ? "新生开学选电脑，如何先确认学习需求和课程使用条件？" : `面向${brief.targetAudience}，如何确认${brief.useScenario}的实际适用性？`,
     contentAngle: travel ? "以出行与办公任务清单组织可证信息" : school ? "以开学学习任务清单组织选购依据" : "以用户任务对应资料依据",
     priorityTopics: topics.map(([topic, reason], i) => ({ topic, rank: i + 1, reason })), retrievalQuestions: topics.map(([topic]) => `${brief.productRequest} 在${brief.useScenario}场景下有哪些关于${topic}的可证原文与限制条件？`), outline,
-    tone: brief.constraints.tone || (platform === "wechat_article" ? "客观解释，分段呈现资料与边界" : platform === "xiaohongshu" ? "轻松短段，提供选购清单，不使用伪造亲测" : "简洁克制，只突出一个核心事实"),
+    tone: `${platform === "wechat_article" ? "客观但有阅读节奏，分节展开资料与需求核对" : platform === "xiaohongshu" ? "轻松直接，像可收藏的选购清单，短句短段" : "自然社交口吻，一段简洁分享，只突出一个核心事实"}${brief.constraints.tone ? `；用户语气偏好：${brief.constraints.tone}` : ""}，不伪造体验或人气。`,
     imagePlan: Array.from({ length: min }, (_, i) => ({ purpose: `${travel ? "差旅办公" : school ? "新生学习" : brief.useScenario}选购资料：${i === 0 ? "核对产品外观与型号" : i === 1 ? "补充另一独立产品视角" : "补充不同细节视角"}，图片不作为未证功能依据`, suggestedBlockKey: outline[Math.min(i, outline.length - 1)].blockKey })),
-    imageCountRange: IMAGE_COUNTS[platform], callToActionGoal: platform === "wechat_article" ? "可咨询课程或办公需求的适用条件，再预约了解。" : platform === "xiaohongshu" ? "收藏选购清单，留言或咨询自己的使用需求。" : "欢迎咨询适用性或预约到店了解。",
-    reasoningSummary: `按${travel ? "移动办公先看携带与协作" : school ? "学习先看应用与阅读" : "任务适用性"}排序；${platform}使用${min}张起的独立 ima 图片，所有方向须取证后确认。` });
+    imageCountRange: IMAGE_COUNTS[platform], callToActionGoal: platform === "wechat_article" ? "读完后列出自己的任务和待确认条件，带着清单咨询具体配置的适用范围。" : platform === "xiaohongshu" ? "收藏这份选购清单，也可以留言说说自己的使用需求。" : "有选电脑的打算，可以聊聊你的使用需求，再一起核对资料。",
+    reasoningSummary: `按${travel ? "移动办公先看携带与协作" : school ? "学习先看应用与阅读" : "任务适用性"}排序；${platform}使用${min}张起的独立知识库图片，所有方向须取证后确认。` });
 }
 
 export function usableEvidence(context: GenerationContext) {
@@ -59,14 +70,15 @@ export function modelPayload(context: GenerationContext, purpose: "generate" | "
   const { facts, images } = usableEvidence(context);
   const travel = /出差|差旅|商务|移动办公|职场/.test(`${context.brief.useScenario} ${context.brief.targetAudience}`);
   const ordered = facts.map((fact, n) => ({ fact, n, score: travel ? /便携|重量|轻|携带/.test(`${fact.fieldKey} ${fact.supportedStatement}`) ? 0 : /办公|协作|连接/.test(fact.supportedStatement) ? 1 : 2 : /学习|应用|软件|系统/.test(`${fact.fieldKey} ${fact.supportedStatement}`) ? 0 : /显示|屏|阅读/.test(fact.supportedStatement) ? 1 : 2 })).sort((a, b) => a.score - b.score || a.n - b.n).map(x => x.fact);
-  return { brief: { targetAudience: context.brief.targetAudience, useScenario: context.brief.useScenario, contentGoal: context.brief.contentGoal, platform: context.brief.platform, ...(purpose === "generate" ? {requestedClaims: context.brief.requestedClaims} : {}), constraints: context.brief.constraints }, strategy: context.strategy, product: { displayName: context.evidence.product.displayName, variant: context.evidence.product.variant }, facts: (purpose === "generate" && context.brief.platform === "wechat_moments" ? ordered.slice(0, 1) : purpose === "generate" ? ordered.slice(0, 3) : ordered).map(f => ({ factId: f.factId, fieldKey: f.fieldKey, supportedStatement: f.supportedStatement, qualifiers: f.qualifiers, value: f.value, unit: f.unit })), images: images.map(i => ({ imageId: i.imageId, description: i.sourceView.supportingExcerpt || "产品外观资料图", modelMatchSummary: i.modelMatchSummary })) };
+  const factLimit = context.brief.platform === "wechat_moments" ? 1 : context.brief.platform === "wechat_article" ? 4 : 3;
+  return { sourceMode: context.evidence.provenanceMode, writingGuide: platformWritingGuide(context.brief.platform!), brief: { targetAudience: context.brief.targetAudience, useScenario: context.brief.useScenario, contentGoal: context.brief.contentGoal, platform: context.brief.platform, ...(purpose === "generate" ? {requestedClaims: context.brief.requestedClaims} : {}), constraints: context.brief.constraints }, strategy: context.strategy, product: { displayName: context.evidence.product.displayName, variant: context.evidence.product.variant }, facts: (purpose === "generate" ? ordered.slice(0, factLimit) : ordered).map(f => ({ factId: f.factId, fieldKey: f.fieldKey, supportedStatement: f.supportedStatement, qualifiers: f.qualifiers, value: f.value, unit: f.unit })), images: images.map(i => ({ imageId: i.imageId, description: i.sourceView.supportingExcerpt || "产品外观资料图", modelMatchSummary: i.modelMatchSummary })) };
 }
 
 export async function generateDraft(context: GenerationContext, model: ModelClient): Promise<GenerationOutcome> {
   if (context.brief.missingFields.length || !context.brief.platform) throw new BusinessError("MISSING_INPUT", "任务条件尚未补齐。", 409, true);
   if (context.strategy.briefVersion !== context.brief.briefVersion) throw new BusinessError("STALE_STRATEGY", "策略与当前任务不一致，请重新规划。", 409, true);
   const response = await model({ purpose: "generate", system: await runtimePrompt("generate"), user: JSON.stringify(modelPayload(context, "generate")) });
-  if (context.evidence.provenanceMode === "live" && response.mode !== "live") throw new BusinessError("MODEL_MODE_MISMATCH", "真实资料任务不能使用 synthetic 模型结果。", 409, true);
+  if (["live", "local"].includes(context.evidence.provenanceMode) && response.mode !== "live") throw new BusinessError("MODEL_MODE_MISMATCH", "真实知识库或本地授权资料任务必须使用实际模型生成，不能使用 synthetic 结果。", 409, true);
   let editable: DraftEditable;
   try { editable = DraftEditable.parse(JSON.parse(response.text)); }
   catch { throw new BusinessError("MODEL_RESPONSE_INVALID", "模型输出未符合草稿结构，请重新生成。", 502); }

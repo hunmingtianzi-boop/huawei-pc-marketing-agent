@@ -61,6 +61,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
   const approvedNumbers = new Set(numberClaims(`${basis} ${evidence.product.displayName}`));
   const approvedDigits = new Set(digits(`${basis} ${evidence.product.displayName}`));
   for (const [location, value] of visible) {
+    if (evidence.provenanceMode === "local" && /(?:ima.{0,12}(?:实时查询|实时检索|fresh\s*live)|(?:刚刚|实时查询|实时检索).{0,12}ima)/i.test(value)) add("SOURCE_MODE_MISREPRESENTED", "compliance", location, "本地授权知识库资料不得表述成刚从 ima 实时检索。", [], "rewrite");
     if (withoutReferences(value)!==value) add("REFERENCE_IN_VISIBLE_TEXT", "compliance", location, "事实标识仅应放在factIds，不得写入可见文案。", [], "remove");
     if (/(?:行业|全网|全球|世界|销量)?第[一1]|最强|最佳|顶级|遥遥领先|百分百|100%\s*(?:成功|满意|安全|无误|保证|不卡|流畅|适合|兼容)|保证(?:成功|结果|不卡|流畅)|绝不|永不|吊打|碾压|竞品垃圾/.test(value)) add("PROHIBITED_MARKETING_CLAIM", "compliance", location, "删除绝对化、虚假保证或无依据对比贬低表述。", [], "remove");
     if (/亲测|我(?:实测|用了|用过|体验)|使用一周|实测(?:跑分|续航|结果)|用户(?:一致|都说|评价)|好评率/.test(value)) add("FABRICATED_EXPERIENCE", "compliance", location, "不得编造亲测、软件实测或用户评价。", [], "remove");
@@ -82,7 +83,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
   const seenIds = new Set<string>(); const seenDigests = new Set<string>();
   for (const selected of draft.selectedImages) {
     const image = evidence.images.find(i => i.imageId === selected.imageId);
-    if (!image) { add("IMAGE_SOURCE_MISSING", "image", selected.imageId, "所选图片不在当前 ima 证据包。", [], "retrieve"); continue; }
+    if (!image) { add("IMAGE_SOURCE_MISSING", "image", selected.imageId, "所选图片不在当前知识库证据包。", [], "retrieve"); continue; }
     if (image.productKey !== evidence.product.productKey || image.modelMatch !== "confirmed" || !image.modelMatchSummary) add(image.modelMatch === "mismatch" ? "IMAGE_MODEL_MISMATCH" : "IMAGE_MODEL_UNCONFIRMED", "image", image.imageId, "图片型号不匹配或依据未确认。", [image.sourceView.citationKey], "retrieve");
     if (image.availability !== "verified" || image.previewAssetKey !== image.imageId || image.sourceView.reviewAccess === "unavailable" || !image.contentDigest) add("MEDIA_UNAVAILABLE", "image", image.imageId, "图片未验证可访问或缓存键无效。", [image.sourceView.citationKey], "retrieve");
     if (seenIds.has(image.imageId) || seenDigests.has(image.contentDigest)) add("DUPLICATE_IMAGE", "image", image.imageId, "重复图片不能用于满足平台配图数量。", [image.sourceView.citationKey], "remove");
@@ -93,15 +94,19 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
   checkpoint("图片与编排", start, "检查平台图数、唯一摘要、型号依据、访问状态、图注及正文位置。");
   start = issues.length;
   if (!draft.title.trim() || !draft.bodyBlocks.length || !draft.callToAction.trim()) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "draft", "需要完整标题、正文和行动引导。");
-  if (brief.platform === "xiaohongshu" && (!draft.tags.length || draft.bodyBlocks.length < 2)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "draft", "小红书需要短段结构、标签及咨询引导。");
-  if (brief.platform === "wechat_article" && (!draft.lead.trim() || draft.bodyBlocks.length < 2)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "draft", "公众号需要导语及分段解释。");
-  if (brief.platform === "wechat_moments" && (draft.bodyBlocks.reduce((n, b) => n + b.text.length, 0) > 600 || new Set(draft.bodyBlocks.flatMap(b => b.factIds)).size > 1)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "bodyBlocks", "朋友圈应为短文并聚焦一个核心事实。");
+  const bodyLength = draft.bodyBlocks.reduce((n, b) => n + b.text.length, 0);
+  if (brief.platform === "xiaohongshu") {
+    if (draft.title.length > 36 || draft.tags.length < 3 || draft.bodyBlocks.length < 3 || draft.bodyBlocks.filter(b => /^\s*□/.test(b.text)).length < 3 || bodyLength > 800) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "draft", "小红书需要短标题、至少三项短段选购清单及自然话题标签。");
+    if (!/收藏/.test(draft.callToAction) || !/留言|评论/.test(draft.callToAction)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "callToAction", "小红书需要明确的收藏清单和留言需求引导。");
+  }
+  if (brief.platform === "wechat_article" && (!draft.lead.trim() || draft.bodyBlocks.length < 3 || draft.bodyBlocks.filter(b => /^\s*【[^】]+】/.test(b.text)).length < 3 || bodyLength < 180 || draft.tags.length)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "draft", "公众号需要导语、至少三个有小标题的实质段落，正文不能仅用几句参数列表代替文章，不使用话题标签。");
+  if (brief.platform === "wechat_moments" && (bodyLength + draft.lead.length + draft.callToAction.length > 400 || draft.bodyBlocks.length !== 1 || draft.lead.trim() || draft.tags.length || new Set(draft.bodyBlocks.flatMap(b => b.factIds)).size > 1)) add("PLATFORM_ADAPTATION_INCOMPLETE", "platform", "bodyBlocks", "朋友圈应为无独立导语和标签的一段社交短文，聚焦一个核心事实及自然咨询引导。");
   checkpoint("平台结构", start, "按平台校验结构、重点和基本长度。");
   let semanticMode: "not_run" | "synthetic" | "live" = "not_run";
   // Hard failure does not masquerade as a model verdict; avoid sending invalid/conflicted evidence.
   if (!issues.length) {
     const response = await model({ purpose: "verify", system: await runtimePrompt("verify"), user: JSON.stringify({ evidence: modelPayload(context), draft: { title: draft.title, lead: draft.lead, bodyBlocks: draft.bodyBlocks, callToAction: draft.callToAction, tags: draft.tags, selectedImages: draft.selectedImages } }) });
-    if (evidence.provenanceMode === "live" && response.mode !== "live") throw new BusinessError("MODEL_MODE_MISMATCH", "真实任务不能使用 synthetic 语义核验。", 409, true);
+    if (["live", "local"].includes(evidence.provenanceMode) && response.mode !== "live") throw new BusinessError("MODEL_MODE_MISMATCH", "真实知识库或本地授权资料任务必须使用实际模型独立语义核验。", 409, true);
     semanticMode = response.mode;
     let verdict;
     try { verdict = SemanticVerdict.parse(JSON.parse(response.text)); } catch { throw new BusinessError("MODEL_VERIFICATION_INVALID", "独立语义核验返回格式无效，请重试。", 502); }
