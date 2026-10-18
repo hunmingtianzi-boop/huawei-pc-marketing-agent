@@ -41,11 +41,12 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
       if (!fact || fact.status !== "supported" || fact.productKey !== evidence.product.productKey) { add("UNSUPPORTED_CLAIM", "fact", block.blockKey, "正文引用不存在、未确认或错配型号的事实。", [], "retrieve"); continue; }
       for (const qualifier of fact.qualifiers) if (!normalized(block.text).includes(normalized(qualifier))) add("FACT_QUALIFIER_MISSING", "fact", block.blockKey, `事实引用需要保留限制条件：${qualifier}`, fact.sourceIds);
     }
-    if (!block.factIds.length && block.text.split(/[。！？\n]/).some(sentence => {
-      const predicate = /支持|搭载|采用|配备|拥有|具备|分辨率|处理器|续航|重量|轻至|薄至|屏幕|接口/.test(sentence);
-      const generalStep = /是否|需求|需要|核对|确认|咨询|建议|选购前|整理/.test(sentence);
-      const assertion = [...sentence.matchAll(/(?:这|该|本|它|产品|机身|整机|设备|笔记本|电脑).{0,20}?(?:支持|搭载|采用|配备|拥有|具备|重约|轻至|薄至)/g)].some(match => !/是否|能否|需要|需/.test(match[0]));
-      return predicate && (!generalStep || assertion);
+    if (!block.factIds.length && block.text.split(/[。！？\n，,；;]/).some(clause => {
+      const predicate = /支持|搭载|采用|配备|拥有|具备|分辨率|处理器|续航|重量|轻至|薄至|屏幕|接口/.test(clause);
+      const explicitQuestion = /是否|能否|哪些|何种|什么|哪种/.test(clause);
+      const explicitStep = /^\s*(?:请|先|建议|可以|选购前|购买前|出差前){0,3}\s*(?:核对|确认|咨询|整理|核查)/.test(clause);
+      const requirement = /(?:需|需要).{0,8}(?:特定|何种|哪些|什么)|对.{0,15}(?:需求|要求)/.test(clause);
+      return predicate && !explicitQuestion && !explicitStep && !requirement;
     })) add("SOURCE_MISSING", "fact", block.blockKey, "产品事实陈述需要绑定对应事实引用。", [], "retrieve");
     const blockBasis = block.factIds.map(id => facts.get(id)).filter(Boolean).map(f => `${f!.supportedStatement} ${f!.value} ${f!.unit || ""} ${f!.qualifiers.join(" ")}`).join(" ");
     const validNumbers = new Set(numberClaims(`${blockBasis} ${evidence.product.displayName}`));
