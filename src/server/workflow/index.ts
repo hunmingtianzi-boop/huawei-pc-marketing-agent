@@ -10,7 +10,7 @@ export function clarifyTask(input: TaskInput, meta: { taskId: string; briefVersi
   input = TaskInput.parse(input);
   const missing: string[] = []; const questions: string[] = [];
   const require = (field: string, absent: boolean, question: string) => { if (absent) { missing.push(field); questions.push(question); } };
-  require("productRequest", !input.productRequest?.trim() || !/\d/.test(input.productRequest), "请提供知识库中的具体产品型号和版本，例如 HUAWEI MateBook 14（鸿蒙版）。");
+  require("productRequest", !input.productRequest?.trim() || !/(?:\d|MateBook\s*X\s*Pro)/i.test(input.productRequest), "请提供知识库中的具体产品型号和版本，例如 HUAWEI MateBook 14（鸿蒙版）。");
   require("targetAudience", !input.targetAudience?.trim(), "本次内容面向哪类人群？");
   require("useScenario", !input.useScenario?.trim(), "本次主要使用场景是什么？");
   require("platform", !input.platform, "需要朋友圈、公众号还是小红书内容？");

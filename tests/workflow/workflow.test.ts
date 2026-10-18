@@ -121,3 +121,9 @@ test("independent semantic malformed result and model failures are never success
   await assert.rejects(validateDraft({ ...context, draft }, async () => ({ text: '{"supported":true}', mode: "synthetic", model: "test", endpointOrigin: null })), (e: unknown) => (e as { code: string }).code === "MODEL_VERIFICATION_INVALID");
   await assert.rejects(validateDraft({ ...context, draft }, async () => { throw new Error("synthetic-model-failure"); }), /synthetic-model-failure/);
 });
+
+// A concrete model need not contain a number; ima still resolves its actual identity.
+test("concrete X Pro model is not trapped in numeric-only clarification", () => {
+ const brief=clarifyTask(TaskInput.parse({productRequest:"HUAWEI MateBook X Pro",targetAudience:"新生",useScenario:"开学",contentGoal:"咨询",platform:"wechat_moments"}),{taskId:randomUUID(),briefVersion:1});
+ assert.ok(!brief.missingFields.includes("productRequest"));assert.equal(brief.productSelection,null);
+});

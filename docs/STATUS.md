@@ -1,6 +1,8 @@
 # 当前状态与交接
 
-更新时间：2026-10-18 14:35（Asia/Shanghai）。阶段：**第一阶段完成，G1 PASS**。G2/G3/G4 尚未执行。
+更新时间：2026-10-18（Asia/Shanghai）。阶段：**第二阶段集成验收中**。G1 沿用 PASS；G2 自动测试/构建/三平台 HTTP 已通过，浏览器与 reviewer 复核进行中；G3 因运行时模型配置缺失暂 BLOCKED；G4 NOT_RUN。
+
+当前分支 `codex/stage2`，阶段二集成基线 `9951bd8`；下文第一阶段记录保留作历史证据，第二阶段增量见文末。
 
 ## 基线与启动
 
@@ -69,3 +71,11 @@
 - 目前只有本机单用户权限边界；多用户、公开部署、持久云存储、长周期链接失效和并发长任务尚未验证。
 
 接续可直接执行：读取 AGENTS、STATUS、DECISIONS、CONTRACTS、`prompts/02-build.md`；先核 Git 状态/凭证存在性并按需重跑真实检查。由主控补齐阶段二业务运行 schema/端点，明确与 v1 的兼容关系、统一更新基线；随后按 TASK_BOARD 创建各自分支/worktree，再分发三个实现任务。不要复制凭证进 worktree或提交原始资料。
+
+## 第二阶段当前证据
+
+- 接续实际 HEAD `9bbb976`、工作区干净；G1 源码/证据沿用。主控先提交新增业务契约2.0.0及API基线 `6d01f36`，保留接入1.0.0，再创建3个独立worktree并真实派工。
+- ima worker `db0d0f0`→`8e73239`、修复 `a241ebf`→`3e78ec2`；workflow `c0eb4b1`→`d1a9706`；UI `3717402`→`a7670be` 已顺序集成。开发任务完成，reviewer只读运行中。
+- 当前95项synthetic/模拟HTTP/SSR测试、非增量tsc、根Next生产build PASS；`.local-evidence/stage2/{integrated-tests.log,typecheck.log,build.log}`。三平台本机HTTP synthetic闭环PASS，`.local-evidence/stage2/http-synthetic.json`，不计真实成稿数。
+- 本次live ima取证 PASS：HUAWEI MateBook 14（鸿蒙版）13事实、18安全来源、4张不同内容摘要且型号可证图片，0冲突。安全汇总 `.local-evidence/stage2/multi-image.json`，私有证据 `.local-data/business-preflight/db00c193-fee7-43b1-ba34-984d3b8f667a/`。
+- 运行时模型：项目LLM三项为空，当前进程无备用模型配置；已核查已知Codex/Claude配置字段与本地11434，无可用完整服务。最小请求预检 BLOCKED/MODEL_NOT_CONFIGURED，executed=false。用户已询问模型选择，已提供DeepSeek Flash兼容方案与本机配置步骤；可复用已有其它服务。

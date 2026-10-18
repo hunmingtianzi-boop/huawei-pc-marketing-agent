@@ -4,6 +4,7 @@ export function readModelSettings(env = process.env): ModelSettings | null {
   let url: URL;
   try { url = new URL(env.LLM_BASE_URL); } catch { return null; }
   if (url.username || url.password || url.search || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname)))) return null;
+  url.pathname = url.pathname.replace(/\/chat\/completions\/?$/, "");
   return { baseUrl: url.href.replace(/\/$/, ""), apiKey: env.LLM_API_KEY, model: env.LLM_MODEL };
 }
 export function modelConfigurationState() {
