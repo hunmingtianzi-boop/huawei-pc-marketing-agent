@@ -1,5 +1,7 @@
 # 华为 PC 营销智能体
 
+源码仓库：[hunmingtianzi-boop/huawei-pc-marketing-agent](https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent)（私有，需访问权限）。本机交付1的实际验收、安全证据及未完成项见 [STATUS](docs/STATUS.md) 和 [交付记录](docs/evidence/delivery-2026-10-18.json)。
+
 默认从本机 `华为PC全板块深度知识库_v7/` 读取已授权原文与图片（local，不耗ima额度），调用现有实际模型；保留可选ima live路径。三平台提供各自的模拟预览和离线图文HTML导出，未发布。完整操作见 [本机使用说明](docs/USER_GUIDE.md)。
 
 本机三平台图文工作台：必要澄清 → 场景策略 → 本地授权或指定 ima 产品事实与型号图片 → 实际模型生成 → 规则及独立语义核验 → 编辑重验 → 服务端导出。目标平台为朋友圈（1–3图）、公众号（2–4图）、小红书（3–6图）。当前验收结论、实际结果与阻塞以 [STATUS](docs/STATUS.md) 和 [验收记录](docs/evidence/stage2-2026-10-18.json) 为准；synthetic 不计真实成稿。

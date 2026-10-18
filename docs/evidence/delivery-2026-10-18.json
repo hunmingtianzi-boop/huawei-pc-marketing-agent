@@ -1,0 +1,311 @@
+{
+  "at": "2026-10-18T08:26:40.921344+00:00",
+  "baselineCommit": "5b911808402a02d451ccaf09358362839e8f5850",
+  "unifiedContractCommit": "b0a89b90709723d72bf5cd5bf4ed8b4257c46df8",
+  "applicationCommit": "e79b9e057d9fedbe6d18aa031fad270cbafa243a",
+  "generationCommit": "3bb377f",
+  "contracts": {
+    "foundation": "1.0.0",
+    "business": "2.1.0",
+    "legacyBusinessReadable": "2.0.0"
+  },
+  "sourceMode": "local",
+  "model": {
+    "mode": "live",
+    "model": "gpt-4.1",
+    "endpointOrigin": "https://api.openai-next.com",
+    "credentialsIncluded": false
+  },
+  "gates": {
+    "G2": "PASS",
+    "G3-local": "PASS",
+    "independentCodeAndMaterialReview": "PASS",
+    "G3-ima-fresh": "BLOCKED",
+    "G4-complete": "BLOCKED"
+  },
+  "verification": {
+    "automatedTests": 150,
+    "automatedTestsPassed": 150,
+    "nonIncrementalTypecheck": "PASS",
+    "productionBuild": "PASS",
+    "cleanSourceInstallAndBuild": "PASS",
+    "credentialAndHistoryScan": "PASS",
+    "localSourceNetworkCalls": 0,
+    "browserThreePlatforms": "PASS",
+    "browserCarousel": "PASS",
+    "browserEditInvalidationRevalidation": "PASS",
+    "serverPortableHtmlExport": "PASS",
+    "offlineFileBrowserOpen": "BLOCKED",
+    "continuousDemoVideo": "NOT_RUN"
+  },
+  "observations": [
+    {
+      "label": "actual local catalog",
+      "status": "PASS"
+    },
+    {
+      "label": "moments school attempt1",
+      "runId": "5d34d6a6-491a-45db-8c22-1503cdc14464",
+      "version": 1,
+      "product": "HUAWEI MateBook 14（鸿蒙版）",
+      "platform": "wechat_moments",
+      "scenario": "新生开学",
+      "state": "ready",
+      "status": "PASS",
+      "images": 1,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "6ed8a76e-54da-4cc1-9afc-6371701445d8",
+      "retrievedAt": "2026-10-18T08:09:25.581Z"
+    },
+    {
+      "label": "title caption invalidation revalidation",
+      "runId": "5d34d6a6-491a-45db-8c22-1503cdc14464",
+      "version": 2,
+      "product": "HUAWEI MateBook 14（鸿蒙版）",
+      "platform": "wechat_moments",
+      "scenario": "新生开学",
+      "state": "ready",
+      "status": "PASS",
+      "images": 1,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "6ed8a76e-54da-4cc1-9afc-6371701445d8",
+      "retrievedAt": "2026-10-18T08:09:25.581Z"
+    },
+    {
+      "label": "xiaohongshu school attempt1",
+      "runId": "efffc7e0-38c5-4b80-aa75-13302489f943",
+      "version": 1,
+      "product": "HUAWEI MateBook 14（鸿蒙版）",
+      "platform": "xiaohongshu",
+      "scenario": "新生开学",
+      "state": "ready",
+      "status": "PASS",
+      "images": 3,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "9c4411fd-cd84-4bb5-b6c2-b039edada698",
+      "retrievedAt": "2026-10-18T08:09:36.631Z"
+    },
+    {
+      "label": "article travel attempt1",
+      "runId": "8d35a25e-812c-4b77-81b9-79e710c776fd",
+      "version": 1,
+      "product": "HUAWEI MateBook 14（鸿蒙版）",
+      "platform": "wechat_article",
+      "scenario": "出差办公",
+      "state": "ready",
+      "status": "PASS",
+      "images": 2,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "17bb9967-097f-4033-8c31-b168fd38933c",
+      "retrievedAt": "2026-10-18T08:09:44.591Z"
+    },
+    {
+      "label": "same product/platform different scenario",
+      "runId": "5d34d6a6-491a-45db-8c22-1503cdc14464",
+      "version": 4,
+      "product": "HUAWEI MateBook 14（鸿蒙版）",
+      "platform": "wechat_moments",
+      "scenario": "出差办公",
+      "state": "ready",
+      "status": "PASS",
+      "images": 1,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "6ed8a76e-54da-4cc1-9afc-6371701445d8",
+      "retrievedAt": "2026-10-18T08:09:25.581Z"
+    },
+    {
+      "label": "different model Pro S attempt1",
+      "runId": "6fda9bcf-5a8e-4c9e-9beb-ebd77b058845",
+      "version": 1,
+      "product": "HUAWEI MateBook Pro S",
+      "platform": "wechat_moments",
+      "scenario": "出差办公",
+      "state": "ready",
+      "status": "PASS",
+      "images": 1,
+      "sourceMode": "local",
+      "generationMode": "live",
+      "modelInvoked": true,
+      "model": "gpt-4.1",
+      "semanticMode": "live",
+      "evidenceSetId": "fe43cdfb-622a-4d8b-b3d6-0b029e101441",
+      "retrievedAt": "2026-10-18T08:10:00.440Z"
+    },
+    {
+      "label": "actual D16 insufficient images",
+      "status": "PASS",
+      "runId": "fac0b7ab-43a0-4f3a-b51a-62fed9b9b565",
+      "images": 2,
+      "required": 3,
+      "exportBlocked": true
+    }
+  ],
+  "finalActualModelRevalidation": [
+    {
+      "runId": "5d34d6a6-491a-45db-8c22-1503cdc14464",
+      "version": 5,
+      "platform": "wechat_moments",
+      "status": "PASS",
+      "codes": [
+        "REQUESTED_CLAIM_OMITTED"
+      ],
+      "semanticMode": "live"
+    },
+    {
+      "runId": "efffc7e0-38c5-4b80-aa75-13302489f943",
+      "version": 1,
+      "platform": "xiaohongshu",
+      "status": "PASS",
+      "codes": [
+        "REQUESTED_CLAIM_OMITTED"
+      ],
+      "semanticMode": "live"
+    },
+    {
+      "runId": "8d35a25e-812c-4b77-81b9-79e710c776fd",
+      "version": 1,
+      "platform": "wechat_article",
+      "status": "PASS",
+      "codes": [
+        "REQUESTED_CLAIM_OMITTED"
+      ],
+      "semanticMode": "live"
+    },
+    {
+      "runId": "6fda9bcf-5a8e-4c9e-9beb-ebd77b058845",
+      "version": 1,
+      "platform": "wechat_moments",
+      "status": "PASS",
+      "codes": [
+        "REQUESTED_CLAIM_OMITTED"
+      ],
+      "semanticMode": "live"
+    }
+  ],
+  "limitations": [
+    "Local source is authorized by this user; it is not fresh ima access evidence.",
+    "In-app browser URL policy denies file protocol; no bypass attempted.",
+    "Continuous video unavailable in current browser tool; executable demo script prepared.",
+    "Public deployment, ModelScope listing and contest submission not performed.",
+    "Single-user localhost and one Node process.",
+    "Browser download filesystem path not verified; server export bytes separately archived."
+  ],
+  "evidenceHashes": [
+    {
+      "path": ".local-evidence/delivery/tests-final.log",
+      "sha256": "6a9ea1eb772628fdf7619369701151bb6a987d60d78e005f09968e7fcb115a20"
+    },
+    {
+      "path": ".local-evidence/delivery/typecheck-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/delivery/build-final.log",
+      "sha256": "8c14d0f28c18d3b967aa252e45689d67ea369fe8e1369df5452396eef7cae983"
+    },
+    {
+      "path": ".local-evidence/delivery/clean-install.log",
+      "sha256": "dfee3d5d114d827ef4cbaf0756317e368d965c161b37d338fe52ba2b47725ba9"
+    },
+    {
+      "path": ".local-evidence/delivery/clean-build.log",
+      "sha256": "0b0b55421c0a939c54968efdd4bfbe3bafe40df24f6f7fa2212f299b99569d62"
+    },
+    {
+      "path": ".local-evidence/delivery/safety.json",
+      "sha256": "06d96b3bba1801c5698cc637cd06f610b275fbf58ac83a236d515c5d7a4d62b0"
+    },
+    {
+      "path": ".local-evidence/delivery/history-safety.json",
+      "sha256": "9f703ba12307fb4eacfc156f6da0937acc6503bcec0f0228fef1e4b3cb1794a8"
+    },
+    {
+      "path": ".local-evidence/delivery/model-probe.json",
+      "sha256": "19b3c0a925d51369fabbcc1673c065c63e956c514ca88c61241731717537cd30"
+    },
+    {
+      "path": ".local-evidence/delivery/local-source.json",
+      "sha256": "84bf4bb00987fb472cdf757eddf4032d54713d8b226c0d78e734c1312064a558"
+    },
+    {
+      "path": ".local-evidence/delivery/business.json",
+      "sha256": "ae377242c7433bb525836387889cd5fa05acc37de605c14e3c740e8ed79a3e29"
+    },
+    {
+      "path": ".local-evidence/delivery/final-revalidation.json",
+      "sha256": "360924accabb3800413e43262e3541225168e96fbd697d195f98dadaff26ff19"
+    },
+    {
+      "path": ".local-evidence/delivery/browser.json",
+      "sha256": "9e4cab9dbbf37d4f0d5fc4d59a37477dcb553db992a7f88ec649d777fb021006"
+    },
+    {
+      "path": ".local-evidence/delivery/preview-moments.png",
+      "sha256": "e97dd36d649a0ef9a2275d7f74f5da4af392a23dc442215ef34d1e53067d2fdc"
+    },
+    {
+      "path": ".local-evidence/delivery/preview-wechat.png",
+      "sha256": "74d442806c9df1f7c2b249cb92fd0830123d5f2391115807335a0ad2de9872c9"
+    },
+    {
+      "path": ".local-evidence/delivery/preview-xiaohongshu.png",
+      "sha256": "6b7765d2e55da4770fcbf4bbabcc23dfe83b2771fff3688a88ff67918725ef30"
+    },
+    {
+      "path": ".local-evidence/delivery/preview-xiaohongshu-second.png",
+      "sha256": "783a793234dddaa7bc6b06aa93a9f6f230bc788d009ff33fdf22c10369b53f79"
+    },
+    {
+      "path": ".local-evidence/delivery/browser-stale.png",
+      "sha256": "ffe707a9e2cf3b5b5c6d0e4d66d22090ee4335b1906627ccb9bf2d10cfd6dd8f"
+    },
+    {
+      "path": ".local-evidence/delivery/browser-export.png",
+      "sha256": "cac7d91a3f2224e1aeb65db93aed6085cd0f45f605075e68184930cabdc6e3bb"
+    },
+    {
+      "path": ".local-evidence/delivery/review-sources/REPORT.md",
+      "sha256": "0369c064d4bd97c60fcc03b8b2cdcac2f758cd839a748dafd80bc30d4750d0db"
+    },
+    {
+      "path": ".local-evidence/delivery/review-sources/RECHECK-e79b9e0.md",
+      "sha256": "1f15054491fcd490f695f13d5ab779db2fc4d469eec9660fae4634242d63d8f3"
+    },
+    {
+      "path": ".local-evidence/delivery/review-content/REPORT.md",
+      "sha256": "0c83d0b7b6bee17801e12ce3ee41ad36680f127b9219c19cc12317acaca16654"
+    },
+    {
+      "path": ".local-evidence/delivery/review-content/RECHECK-e79b9e0.md",
+      "sha256": "d240bb29aa9ddeb251925b149b5f8de134f39d750399ee50f10ae7d215ac20bd"
+    },
+    {
+      "path": ".local-evidence/delivery/review-delivery/REPORT.md",
+      "sha256": "9daaaadbf07630d41585d3cdd750c6b97615eca7290f4cb90e4e52aeab341496"
+    },
+    {
+      "path": ".local-evidence/delivery/review-delivery/RECHECK-e79b9e0.md",
+      "sha256": "cebb9f1fb86eea5dd4bec2391195e934f3eb10aaf47cd40a45208e08969b6813"
+    }
+  ]
+}

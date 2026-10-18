@@ -5,7 +5,8 @@ import {RunResponse,ExportResponse,LocalCatalog,TaskInput,type RunResult} from "
 const base=process.env.APP_TEST_URL||"http://127.0.0.1:3210";
 const folder=".local-evidence/delivery", outputs=".local-data/delivery-results";
 const observations:Record<string,unknown>[]=[];
-const commit=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+let commit="unversioned-source-archive";
+try{commit=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim();}catch{/* Source ZIPs can be verified without Git metadata. */}
 async function report(){await mkdir(folder,{recursive:true});await writeFile(`${folder}/business.json`,JSON.stringify({at:new Date().toISOString(),commit,sourceMode:"local",modelMode:"live",observations},null,2));}
 async function post(route:string,body:unknown){return fetch(base+route,{method:"POST",headers:{Origin:base,"Content-Type":"application/json"},body:JSON.stringify(body)});}
 async function read(id:string){const response=await fetch(`${base}/api/runs/${id}`);assert.equal(response.status,200);return RunResponse.parse(await response.json()).run;}

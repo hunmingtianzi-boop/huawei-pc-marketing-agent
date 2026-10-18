@@ -1,6 +1,6 @@
 # 验收门槛、用例与证据要求
 
-状态：第一阶段G1 PASS沿用；第二阶段G2 PASS（118项测试、类型/构建、三平台HTTP与browser、reviewer复核）。G3已取得本次真实ima快照+实际模型的5组场景/平台结果及改稿导出，仍因ima220021当日额度阻塞另一型号B-06与fresh复验，整体BLOCKED；G4 NOT_RUN。实际证据见STATUS与docs/evidence/stage2-2026-10-18.json。下方用例是标准，不能把未执行项当结果。
+状态：本机交付1的G2 PASS（最终150项/类型/构建/干净安装）、G3-local PASS（三平台/两场景/另一型号/修改导出），三份独立代码与材料复核PASS。G4整体BLOCKED：离线file打开受客户端策略限制，正式连续视频和评审外链未完成。历史G1 PASS及G3-ima当日额度阻塞保留，local不冒充fresh ima。实际证据见STATUS与docs/evidence/delivery-2026-10-18.json；下方用例不能自动视为执行结果。
 
 ## 1. 怎样称为“测过”
 

@@ -1,18 +1,18 @@
 # 当前状态与交接
 
-2026-10-18，本轮为**本机交付1**：用户明确授权从本地知识库读取，不走ima API；增加三平台模拟预览及自含图片HTML。G1/G2既有基线保留；G3-local PASS（真实资料+实际模型）；G4-local浏览器与独立评审执行中。正式赛事G3-ima fresh和视频/外链另列，不以local冒充实时ima。
+2026-10-18，本轮为**本机交付1**：用户授权本地素材、不走ima API；三平台模拟预览和图文HTML已交付。G2 PASS、G3-local PASS；独立代码/材料复核PASS。G4整体仍BLOCKED：离线file直接打开受客户端策略限制，正式连续视频和外链未完成；不以local冒充fresh ima。
 
 ## 基线、代码和启动
 
 - 项目 /Users/zhouzihan/Documents/ChatGPT/华为黑客松，分支codex/stage2。本轮开始HEAD 5b911808402a02d451ccaf09358362839e8f5850、工作区干净。契约提交b0a89b90709723d72bf5cd5bf4ed8b4257c46df8后创建三个独立worktree。
-- 接入1.0.0不变；业务2.1.0兼容已保存2.0.0。主控唯一，维护公共契约/API/运行/资产/根依赖。集成源码3bb377f；最终HEAD以git rev-parse HEAD为准。
+- 接入1.0.0不变；业务2.1.0兼容已保存2.0.0。唯一主控维护公共边界。生成集成源码3bb377f；独立评审修复与最终应用源码e79b9e057d9fedbe6d18aa031fad270cbafa243a，当前生产已重建并运行该版。此后仅验收脚本兼容源码ZIP无Git和交接文档，最终HEAD以git rev-parse HEAD为准。
 - npm ci；本机.env.local配置LLM三项；知识库放根目录或LOCAL_KB_ROOT；npm run build，再npm start -- --port 3210。当前生产预览 http://127.0.0.1:3210/ 。Node26/npm11、Next16/React19、单一package-lock，无新增依赖。见README、USER_GUIDE。
 
 ## 本轮已验证
 
 - 本机真实目录10个明确型号进入菜单；计数为最多6张已核查候选，不是全库图片总数。MateBook14（鸿蒙版）13事实、18来源、4张摘要不同图片，无冲突。实际本地取证脚本callIma/fetchMedia计数均0；production local明确拒绝网络取材。
 - 实际模型gpt-4.1、https://api.openai-next.com/v1（提供方路由名，未认证底层模型），最小请求PASS，生成与独立语义核验分别实际请求。凭证只在主目录.env.local（0600），不回传客户端或worker。
-- 集成版145/145 synthetic/模拟传输/SSR/状态测试PASS，非增量tsc、生产build PASS。包括旧请求迟到、直接导出未通过稿、无依据价格/亲测、资料冲突、图片不足/损坏/重复、平台更换、标题图注失效、HTML转义/内嵌及local拒绝合成模型。
+- 最终150/150 synthetic/模拟传输/SSR/状态测试PASS，非增量tsc、生产build PASS；无秘密/原库的干净源码解包npm ci与build也PASS。包括迟到结果、直接导出未通过稿、无依据价格/亲测、资料冲突、图片不足/损坏/重复、平台切换、标题图注失效、HTML转义/内嵌/位置、local拒绝合成模型、历史载入编辑竞态和完整型号识别。
 - 朋友圈单卖点短动态；小红书短标题/清单/标签和可操作图集；公众号导语/分节解释/内嵌图。均明确模拟未发布，无虚构互动数字。
 
 ## G3-local：PASS
@@ -35,10 +35,21 @@ npm run verify:delivery 实际执行输入→策略→本地原文/图→实际�
 
 .local-evidence/delivery/：tests.log、typecheck.log、build.log、model-probe.json/log、local-source.json、business.json/log和浏览器截图。三个worker提交经范围审查后顺序集成，SHA/路径见TASK_BOARD。工具没有销毁接口，仅报告实际completed，不声称已销毁线程。凭证和原始资料没有复制到worktree。
 
+最终证据为tests-final.log、typecheck-final.log、build-final.log、clean-install.log、clean-build.log、safety.json、final-revalidation.json/log。安全扫描117个跟踪文件、10个浏览器JS及3个安全DTO PASS，凭证0600、未打印秘密。公开安全汇总见docs/evidence/delivery-2026-10-18.json，私有证据不随源码包公开。
+
+三份独立初审实际发现并主控修复：载入期间新编辑覆盖P2；型号Pro/Pro S/D/GT/Fold等识别不全P2；普通“第一步”误拦截P2；HTML位置元数据缺失P3。e79b9e0三份定向复核全部PASS（来源150项、内容81项及21个型号对照、UI40项），初始FAIL报告保留，非宣称首次评审无问题。报告在review-sources/content/delivery/RECHECK-e79b9e0.md。
+
+浏览器三平台实际预览、图片依据与小红书1→2/3图集切换PASS。朋友圈v4→v5实际改标题、立即禁导出、保存stale、独立模型重验、HTML下载提示；后端同版HTML/Markdown字节已归档。最终e79b9e0生产版重新核验当前朋友圈v5、小红书v1、公众号v1及Pro S v1，四项实际模型核验/导出PASS，含逐图Placement。浏览器下载目录落盘路径未验证，不能把提示当作Downloads文件证明。
+
+## 本机交付1文件
+
+dist/delivery-1/source.zip：可公开审阅的跟踪源码与说明，无凭证/原库/缓存/node_modules。dist/delivery-1/local-examples/：四组当前已通过稿的HTML与Markdown，含授权选图，仅本机审阅，勿随公开源码上传。CHECKSUMS.sha256及DELIVERY.json记录文件摘要、应用源码提交、打包提交与边界；包内README说明启动与原库/模型配置。完整运行指南见docs/USER_GUIDE.md，外部提交准备见docs/SUBMISSION.md。
+
 ## 限制、待验证与交付边界
 
 - 原G1真实ima PASS；第二阶段G3-ima部分通过、fresh与另一型号受220021当日额度BLOCKED的结论保留，见docs/evidence/stage2-2026-10-18.json及Git 5b91180的STATUS。本轮不请求ima，不声称额度恢复；local已补另一型号业务对照。
 - 正式连续Demo视频未录制；当前浏览器API无连续录屏入口，DEMO.md已给脚本，截图不冒充视频。
-- 没有Git远端、推送、公开部署、魔搭链接或赛事提交。SUBMISSION.md整理材料与待对外动作；不编造链接或评审可访问状态。
+- 内置浏览器实际拒绝file协议，未绕过策略；HTML直接离线打开的客户端视觉验收BLOCKED，文件/字节/嵌图已验证。此项和视频、外链保持未完成，不把G4整体标PASS。
+- 用户随后授权直接创建GitHub仓库，已创建私有仓库 https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent ，origin已配置；源码推送与远端SHA核对在交付收尾执行。仓库不等于公开部署或评审已授权可见。魔搭链接和赛事提交仍未完成，见SUBMISSION.md。
 - 本机单用户/单Node进程，没有公网认证、多用户/多进程锁；海报不在首版范围。不是平台发布或一键导入服务。
 - 新机需配置模型并提供有权限的原始知识库；源码包不携带凭证或完整资料。local快照不证明官网当前事实或fresh ima，正式赛事来源要求仍按赛题确认。
