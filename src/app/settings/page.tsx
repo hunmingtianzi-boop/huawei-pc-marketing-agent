@@ -1,0 +1,3 @@
+import { ModelSettings, PageHeading } from "@/components/resource-pages";
+import ConnectionPanel from "@/components/connection-panel";
+export default function Page() { return <><PageHeading title="让创作服务，准备就绪。" description="查看本机服务配置和实际检查结果。默认工作流使用授权本地知识库。" /><ModelSettings /><section className="workspace"><h2>资料来源</h2><p className="section-description">local 模式读取授权的本地知识库原文与图片，并调用实际模型。每次任务保留自己的资料摘要和图片依据。</p><p className="hint">live 使用 ima 知识库；synthetic 为人工构造样例，仅用于逻辑验证。界面与导出会如实显示来源模式。</p></section><details className="connection-details"><summary>历史 ima 接入检查（可选）</summary><p className="hint">仅用于显式 live 模式的独立接入检查；默认 local 创作无需执行。</p><ConnectionPanel /></details></>; }

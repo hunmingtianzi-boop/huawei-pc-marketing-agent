@@ -22,7 +22,7 @@ for(const edit of ["audience","title"] as const)test(`late history/latest respon
  const compiled=ts.transpileModule(readFileSync(sourcePath,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
  const mod={exports:{} as any};
  new Function("require","module","exports",compiled)((id:string)=>id==="react"?react:id==="@/contracts"?sourceRequire("../contracts/index.ts"):id==="@/contracts/business"?sourceRequire("../contracts/business.ts"):id==="./draft-preview"?{default:()=>null}:sourceRequire(id),mod,mod.exports);
- const render=()=>{cursor=0;return mod.exports.default();};
+ const render=(active=true)=>{cursor=0;return mod.exports.default({active});};
  const nodes=(tree:any):any[]=>!tree||typeof tree!=="object"?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(nodes)];
  let release!:()=>void;const originalFetch=global.fetch;t.after(()=>{global.fetch=originalFetch;});
  global.fetch=(()=>new Promise(resolve=>{release=()=>resolve(Response.json({run}));})) as typeof fetch;
@@ -32,5 +32,16 @@ for(const edit of ["audience","title"] as const)test(`late history/latest respon
  const field=()=>nodes(render()).find(n=>n.type==="input"&&(edit==="audience"?n.props.placeholder==="例如：新生":n.props.maxLength===300&&!n.props.placeholder));
  const marker=edit==="audience"?"新的目标人群":"载入期间的新标题";field().props.onChange({target:{value:marker}});
  release();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(field().props.value,marker);
+ // The root layout keeps this exact component mounted across real route changes.
+ // Hiding /create and returning must preserve edits and the closed export gate.
+ assert.equal(render(false).props.hidden,true);
+ assert.equal(render(true).props.hidden,false);
+ assert.equal(field().props.value,marker);
+ const contentTab=nodes(render()).find(n=>n.props?.["aria-controls"]==="view-content");
+ contentTab.props.onClick();
+ assert.equal(nodes(render()).find(n=>n.props?.id==="view-content").props.hidden,false);
+ assert.equal(field().props.value,marker);
+ nodes(render()).find(n=>n.props?.["aria-controls"]==="view-task").props.onClick();
+ assert.equal(field().props.value,marker);
  assert.equal(nodes(render()).find(n=>n.type==="button"&&n.props.children==="下载图文 HTML").props.disabled,true);
 });

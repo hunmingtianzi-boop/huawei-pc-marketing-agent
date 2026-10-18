@@ -24,7 +24,11 @@ function Source({ source }: { source: SourceView }) {
 function Issues({ issues }: { issues: ValidationIssue[] }) {
   return <ul className="issues">{issues.map(issue => <li key={issue.issueId} className={issue.severity === "warning" ? "warning" : "error"}><strong>{issue.code} · {issue.status === "resolved" ? "已处理" : "待处理"}</strong><p>{issue.message}</p>{issue.location && <small>位置：{issue.location}</small>}</li>)}</ul>;
 }
-export default function MarketingWorkbench() {
+export default function MarketingWorkbench({ active = true }: { active?: boolean } = {}) {
+  const [view, setView] = useState("task");
+  const lastOpened = useRef("");
+  const deferredSelection = useRef(false);
+  const [selectionRevision, setSelectionRevision] = useState(0);
   const [run, setRun] = useState<RunResult | null>(null);
   const [catalog, setCatalog] = useState<z.infer<typeof LocalCatalog> | null>(null);
   const [catalogError, setCatalogError] = useState("");
@@ -57,9 +61,41 @@ export default function MarketingWorkbench() {
     let mounted = true;
     request("/api/runs", RunListResponse).then(data => { if (mounted) setHistory(data.runs); }).catch(err => { if (mounted) setError(err instanceof Error ? err.message : "无法读取运行记录"); });
     request("/api/local-catalog", LocalCatalog).then(data => { if (mounted) { setCatalog(data); if (!data.available) setCatalogError("本地资料目录当前不可用，可手动填写型号并查看执行结果。"); } }).catch(() => { if (mounted) setCatalogError("本地产品目录暂时无法读取，可手动填写完整型号；执行错误将如实显示。"); });
-    const initialId = new URLSearchParams(window.location.search).get("run");
-    if (initialId && z.uuid().safeParse(initialId).success) void loadRun(initialId);
     return () => { mounted = false; };
+  }, []);
+  useEffect(() => {
+    const changed = () => setSelectionRevision(value => value + 1);
+    window.addEventListener("workbench-selection-change", changed);
+    return () => window.removeEventListener("workbench-selection-change", changed);
+  }, []);
+  function applyRouteSelection() {
+    if (!active) return;
+    if (pending.current) { deferredSelection.current = true; return; }
+    deferredSelection.current = false;
+    const params = new URLSearchParams(window.location.search);
+    const product = params.get("product");
+    if (product && !params.get("run") && lastOpened.current !== `product:${product}`) {
+      if ((!dirtyRef.current.input && !dirtyRef.current.draft) || window.confirm("选择此产品将替换当前任务型号并使旧核验失效，确认继续？")) {
+        lastOpened.current = `product:${product}`;
+        changeInput("productRequest", product.slice(0, 180)); setView("task");
+      }
+    }
+    const initialId = params.get("run");
+    if (initialId && initialId !== lastOpened.current && z.uuid().safeParse(initialId).success) {
+      void loadRun(initialId);
+    }
+  }
+  useEffect(() => { applyRouteSelection(); }, [active, selectionRevision]);
+  useEffect(() => {
+    if (!busy && active && deferredSelection.current) applyRouteSelection();
+  }, [busy, active]);
+  useEffect(() => {
+    function protectReload(event: BeforeUnloadEvent) {
+      if (!dirtyRef.current.input && !dirtyRef.current.draft) return;
+      event.preventDefault(); event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", protectReload);
+    return () => window.removeEventListener("beforeunload", protectReload);
   }, []);
   useEffect(() => {
     if (!run?.activeOperationId) return;
@@ -81,6 +117,16 @@ export default function MarketingWorkbench() {
     return () => { cancelled = true; clearTimeout(timer); };
     // The polling response is accepted through refs; it must not reset unsaved editing.
   }, [run?.runId, run?.activeOperationId]);
+  function openFact(id: string) {
+    setView("evidence");
+    requestAnimationFrame(() => {
+      const fact = document.getElementById(`fact-${id}`);
+      if (fact instanceof HTMLDetailsElement) {
+        fact.open = true; fact.scrollIntoView({ block: "center" });
+        fact.querySelector("summary")?.focus();
+      }
+    });
+  }
   function changeInput<K extends keyof TaskInput>(key: K, value: TaskInput[K]) {
     setInput(previous => ({ ...previous, [key]: value }));
     dirtyRef.current.input = true; setInputDirty(true); setExported(null); revisionEpoch.current++;
@@ -96,9 +142,10 @@ export default function MarketingWorkbench() {
   }
   async function loadRun(id: string) {
     if (pending.current) return;
+    if ((dirtyRef.current.input || dirtyRef.current.draft) && !window.confirm("载入记录将替换尚未保存的编辑，确认继续？")) return;
     pending.current = true; setBusy(true); setError(""); setNotice("");
     const ticket = ++requestEpoch.current; const editEpoch = revisionEpoch.current; selectedId.current = id; current.current = null;
-    try { const data = await request(`/api/runs/${id}`, RunResponse); if (ticket === requestEpoch.current) { accept(data.run, editEpoch === revisionEpoch.current); setMode(data.run.mode); if (editEpoch !== revisionEpoch.current) setNotice("载入期间的新编辑已保留；请核对任务内容，保存并重新核验后再导出。"); } } catch (err) { await handleError(err, id); }
+    try { const data = await request(`/api/runs/${id}`, RunResponse); if (ticket === requestEpoch.current) { accept(data.run, editEpoch === revisionEpoch.current); lastOpened.current = id; setMode(data.run.mode); if (editEpoch !== revisionEpoch.current) setNotice("载入期间的新编辑已保留；请核对任务内容，保存并重新核验后再导出。"); } } catch (err) { await handleError(err, id); }
     finally { pending.current = false; setBusy(false); }
   }
   async function action(actionName: "execute" | "regenerate" | "revalidate" | "revise", patch?: { input?: TaskInput; draft?: DraftEditable }) {
@@ -135,8 +182,9 @@ export default function MarketingWorkbench() {
   }
   function newTask() {
     if (pending.current) return;
+    if ((dirtyRef.current.input || dirtyRef.current.draft) && !window.confirm("新建任务将清除尚未保存的编辑，确认继续？")) return;
     requestEpoch.current++; revisionEpoch.current++; selectedId.current = ""; current.current = null;
-    setRun(null); setDraft(null); setExported(null); setError(""); setNotice("");
+    setView("task"); setRun(null); setDraft(null); setExported(null); setError(""); setNotice("");
     dirtyRef.current = { input: false, draft: false }; setInputDirty(false); setDraftDirty(false);
   }
   async function exportContent(copy: boolean, format: "markdown" | "html" = "markdown") {
@@ -164,10 +212,19 @@ export default function MarketingWorkbench() {
   const uniqueIssues = [...(run?.issues ?? []), ...(run?.validation?.issues ?? [])].filter((issue, index, items) => items.findIndex(other => other.issueId === issue.issueId) === index);
   const activeMode = run?.mode ?? mode;
   const sourceLabel = activeMode === "local" ? "本地知识库" : activeMode === "synthetic" ? "人工样例" : "ima 知识库";
-  return <div className="marketing-workbench">
-    <nav className="workbench-nav" aria-label="工作台导航"><a href="#task-section">任务输入</a><a href="#content-preview" className="preview-nav-link">平台图文预览</a><a href={run ? "#strategy-section" : undefined} aria-disabled={!run}>内容策略</a><a href={run ? "#evidence-section" : undefined} aria-disabled={!run}>事实依据</a><a href={run ? "#validation-section" : undefined} aria-disabled={!run}>核验与导出</a></nav>
+  return <div className="marketing-workbench" hidden={!active}>
+    <div className="workbench-context"><div><span className="context-label">{run ? `第 ${run.currentVersion} 版` : "新建任务"}</span><h1>{run?.input.productRequest ?? "让每一次表达，有据可循。"}</h1><p>{run ? states[run.state] : "选择产品与场景，开始一次有来源的内容创作。"}{dirty ? " / 编辑已保留，待保存重验" : ""}</p></div><span className="badge">{sourceLabel}{run?.brief.platform ? ` / ${platforms[run.brief.platform]}` : ""}</span></div>
+    {error && <p className="error feedback" role="alert">{error}</p>}
+    {notice && <p className="feedback" role="status">{notice}</p>}
+    {dirty && <p className="feedback" role="status">编辑已保留，尚未保存与重新核验。切换页面不会清除编辑；当前禁止导出。</p>}
+    {!!uniqueIssues.filter(issue => issue.status !== "resolved").length && <p className="feedback"><span>当前有 {uniqueIssues.filter(issue => issue.status !== "resolved").length} 项待处理问题。</span> <button className="secondary" onClick={() => setView("verification")}>查看核验详情</button></p>}
+    {!!run?.brief.clarifyingQuestions.length && view !== "task" && <aside className="notice"><strong>任务需要补充信息</strong><button className="secondary" onClick={() => setView("task")}>返回任务补充</button></aside>}
+    {run && <details className="workflow-progress" open={!!run.activeOperationId}><summary>{states[run.state]}{run.activeOperationId ? "，自动更新中" : "，查看实际执行记录"}</summary><p className="report-meta">资料 {run.executionEvidence.retrievalMode} / 生成 {run.executionEvidence.generationMode} / 模型{run.executionEvidence.modelInvoked ? "已调用" : "尚无成功调用"}</p><ol className="stages" aria-live="polite">{run.stageSummary.slice(-10).map((stage, i) => <li key={`${stage.at}-${i}`}><div><strong>{stageLabels[stage.stage] ?? stage.stage}</strong><p>{stage.summary}</p></div><span className={`stage-state ${stage.status === "passed" ? "pass" : stage.status === "failed" ? "fail" : ""}`}>{({ running: "进行中", passed: "已完成", blocked: "受阻", failed: "失败" })[stage.status]}</span></li>)}</ol><div className="toolbar"><button type="button" className="secondary" disabled={busy || dirty} onClick={() => void action("execute")}>重新取证并执行</button><button type="button" className="secondary" disabled={busy} onClick={() => void loadRun(run.runId)}>载入最新记录</button></div></details>}
+
+    <nav className="workbench-nav" aria-label="创作视图">{[["task", "任务"], ["content", "图文与修改"], ["strategy", "场景策略"], ["evidence", "事实依据"], ["verification", "核验与导出"]].map(([key, label]) => <button type="button" key={key} aria-current={view === key ? "page" : undefined} aria-controls={`view-${key}`} onClick={() => setView(key)}>{label}{key === "verification" && dirty ? " *" : ""}</button>)}</nav>
+    <div id="view-task" hidden={view !== "task"}>
     <section id="task-section" className="workspace" aria-labelledby="task-title">
-      <div className="panel-head"><div><p className="eyebrow">01 / 任务</p><h2 id="task-title">给这次表达一个方向</h2></div><button type="button" className="secondary" onClick={newTask} disabled={busy}>新任务</button></div>
+      <div className="panel-head"><div><p className="eyebrow">任务简报</p><h2 id="task-title">给这次表达一个方向</h2></div><button type="button" className="secondary" onClick={newTask} disabled={busy}>新任务</button></div>
       <div className="history-row"><label htmlFor="run-history">运行记录</label><select id="run-history" disabled={busy} value={run?.runId ?? ""} onChange={event => { if (event.target.value) void loadRun(event.target.value); }}><option value="">当前新任务</option>{history.map(item => <option key={item.runId} value={item.runId}>{item.input.productRequest ?? "待明确产品"} · {item.input.platform ? platforms[item.input.platform] : "待选平台"} · {item.input.useScenario ?? "待补场景"} · v{item.currentVersion} · {item.mode}</option>)}</select></div>
       <form onSubmit={submitInput} className="task-form">
         <div className="form-grid">
@@ -190,35 +247,33 @@ export default function MarketingWorkbench() {
         <div className="toolbar"><button disabled={busy}>{busy ? "提交中…" : run ? "保存任务并重新执行 →" : "开始执行 →"}</button><span className="hint">{imageRange ? `此平台需要 ${imageRange.min}–${imageRange.max} 张不同的${sourceLabel}型号图片。` : "补充必要条件后执行。"}</span></div>
       </form>
       {run?.brief.clarifyingQuestions.length ? <aside className="notice"><strong>还需要这些信息</strong><ul>{run.brief.clarifyingQuestions.map((question, i) => <li key={i}>{question}</li>)}</ul><p>在上方补充后，保存并重新执行。</p></aside> : null}
-      {error && <p className="error feedback" role="alert">{error}</p>}
-      {notice && <p className="feedback" role="status">{notice}</p>}
     </section>
-    <section id="content-preview" className="workspace preview-workspace" aria-labelledby="platform-preview-title"><div className="panel-head"><div><p className="eyebrow">图文成稿 / 平台模拟</p><h2 id="platform-preview-title">{run?.brief.platform ? platforms[run.brief.platform] : input.platform ? platforms[input.platform] : "三平台"}图文预览</h2></div><span className="badge">模拟预览 · 未发布</span></div><p className="preview-intro">小红书图集笔记、朋友圈动态、公众号内嵌图文章分别排版。资料来源模式：{sourceLabel}。已生成内容的模型调用与资料读取分别记录。</p>{draft && run ? <><p className={`preview-version-note${dirty ? " error" : ""}`}>第 {run.currentVersion} 版 · {dirty ? "当前编辑未保存核验，禁止导出" : run.exportable ? "当前稿可请求服务端导出" : "尚未通过当前版本核验"}{inputDirty ? " · 任务条件已有修改，预览仍对应已生成平台；保存任务后重新生成。" : ""}</p><DraftPreview runId={run.runId} draft={draft} images={run.evidence?.images ?? []} platform={run.brief.platform ?? "wechat_article"} /></> : <div className="preview-empty"><div className="preview-empty-lines" aria-hidden="true"><span /><span /><span /></div><strong>实际图文将在这里呈现</strong><p>完成上方任务输入并开始执行。预览会使用当前成稿与实际图片，不预填展示样稿。</p><a href="#task-section">前往任务输入 ↑</a></div>}</section>
+    </div>
+    <div id="view-content" hidden={view !== "content"}>
+    <section id="content-preview" className="workspace preview-workspace" aria-labelledby="platform-preview-title"><div className="panel-head"><div><p className="eyebrow">图文成稿 / 平台模拟</p><h2 id="platform-preview-title">{run?.brief.platform ? platforms[run.brief.platform] : input.platform ? platforms[input.platform] : "三平台"}图文预览</h2></div><span className="badge">模拟预览 · 未发布</span></div><p className="preview-intro">小红书图集笔记、朋友圈动态、公众号内嵌图文章分别排版。资料来源模式：{sourceLabel}。已生成内容的模型调用与资料读取分别记录。</p>{draft && run ? <><p className={`preview-version-note${dirty ? " error" : ""}`}>第 {run.currentVersion} 版 · {dirty ? "当前编辑未保存核验，禁止导出" : run.exportable ? "当前稿可请求服务端导出" : "尚未通过当前版本核验"}{inputDirty ? " · 任务条件已有修改，预览仍对应已生成平台；保存任务后重新生成。" : ""}</p><DraftPreview runId={run.runId} draft={draft} images={run.evidence?.images ?? []} platform={run.brief.platform ?? "wechat_article"} onFactClick={openFact} /></> : <div className="preview-empty"><div className="preview-empty-lines" aria-hidden="true"><span /><span /><span /></div><strong>实际图文将在这里呈现</strong><p>完成上方任务输入并开始执行。预览会使用当前成稿与实际图片，不预填展示样稿。</p><button type="button" className="secondary" onClick={() => setView("task")}>前往任务输入</button></div>}</section>
+    </div>
     {run && <>
-      <section className="workspace run-progress" aria-labelledby="progress-title" aria-busy={!!run.activeOperationId}>
-        <div className="panel-head"><div><p className="eyebrow">运行 / 第 {run.currentVersion} 版</p><h2 id="progress-title">{states[run.state]}</h2></div><span className={`badge ${run.state === "ready" ? "pass" : run.state === "failed" ? "fail" : "blocked"}`}>{run.mode}</span></div>
-        <p className="report-meta">资料：{run.executionEvidence.retrievalMode} · 生成：{run.executionEvidence.generationMode} · 模型{run.executionEvidence.modelInvoked ? `已调用${run.executionEvidence.model ? ` / ${run.executionEvidence.model}` : ""}` : "暂无成功调用"}</p>
-        <p className="hint">显示最近 10 项执行记录，可能包含历史修订。</p><ol className="stages" aria-live="polite">{run.stageSummary.slice(-10).map((stage, i) => <li key={`${stage.at}-${i}`}><span className="step-number">{String(i + 1).padStart(2, "0")}</span><div><strong>{stageLabels[stage.stage] ?? stage.stage}</strong><p>{stage.summary}</p></div><span className={`stage-state ${stage.status === "passed" ? "pass" : stage.status === "failed" ? "fail" : ""}`}>{({ running: "已开始", passed: "已完成", blocked: "受阻", failed: "失败" })[stage.status]}</span></li>)}</ol>
-        {!run.stageSummary.length && <p className="hint">等待服务端执行记录；进度仅来自实际运行状态。</p>}
-        <div className="toolbar"><button type="button" className="secondary" disabled={busy || dirty} onClick={() => void action("execute")}>重新取证并执行</button><button type="button" className="secondary" disabled={busy} onClick={() => void loadRun(run.runId)}>载入最新记录</button></div>
-      </section>
-      <section id="strategy-section" className="workspace" aria-labelledby="strategy-title"><p className="eyebrow">02 / 场景与策略</p><h2 id="strategy-title">为什么这样表达</h2>{run.strategy ? <div className="strategy-content"><dl className="key-values"><div><dt>用户问题</dt><dd>{run.strategy.audienceProblem}</dd></div><div><dt>内容切入</dt><dd>{run.strategy.contentAngle}</dd></div><div><dt>语气</dt><dd>{run.strategy.tone}</dd></div><div><dt>行动目标</dt><dd>{run.strategy.callToActionGoal}</dd></div></dl><h3>卖点方向与顺序 · 仍须事实支持</h3><ol className="topic-list">{[...run.strategy.priorityTopics].sort((a, b) => a.rank - b.rank).map(topic => <li key={`${topic.rank}-${topic.topic}`}><strong>{topic.topic}</strong><p>{topic.reason}</p></li>)}</ol><p>{run.strategy.reasoningSummary}</p><details><summary>待取证问题与图文编排</summary><ul>{run.strategy.retrievalQuestions.map((question, i) => <li key={i}>{question}</li>)}</ul>{run.strategy.outline.map(block => <p key={block.blockKey}>{block.blockKey}：{block.purpose}</p>)}{run.strategy.imagePlan.map((image, i) => <p key={i}>图片 {i + 1} → {image.suggestedBlockKey}：{image.purpose}</p>)}</details></div> : <p className="empty">补齐任务条件后，展示服务端形成的场景策略。</p>}</section>
-      <section id="evidence-section" className="workspace" aria-labelledby="evidence-title"><p className="eyebrow">03 / 事实依据</p><h2 id="evidence-title">每个主张，都能找到出处</h2>{run.evidence ? <>
+      <div id="view-strategy" hidden={view !== "strategy"}>
+      <section id="strategy-section" className="workspace" aria-labelledby="strategy-title"><p className="eyebrow">场景与策略</p><h2 id="strategy-title">为什么这样表达</h2>{run.strategy ? <div className="strategy-content"><dl className="key-values"><div><dt>用户问题</dt><dd>{run.strategy.audienceProblem}</dd></div><div><dt>内容切入</dt><dd>{run.strategy.contentAngle}</dd></div><div><dt>语气</dt><dd>{run.strategy.tone}</dd></div><div><dt>行动目标</dt><dd>{run.strategy.callToActionGoal}</dd></div></dl><h3>卖点方向与顺序 · 仍须事实支持</h3><ol className="topic-list">{[...run.strategy.priorityTopics].sort((a, b) => a.rank - b.rank).map(topic => <li key={`${topic.rank}-${topic.topic}`}><strong>{topic.topic}</strong><p>{topic.reason}</p></li>)}</ol><p>{run.strategy.reasoningSummary}</p><details><summary>待取证问题与图文编排</summary><ul>{run.strategy.retrievalQuestions.map((question, i) => <li key={i}>{question}</li>)}</ul>{run.strategy.outline.map(block => <p key={block.blockKey}>{block.blockKey}：{block.purpose}</p>)}{run.strategy.imagePlan.map((image, i) => <p key={i}>图片 {i + 1} → {image.suggestedBlockKey}：{image.purpose}</p>)}</details></div> : <p className="empty">补齐任务条件后，展示服务端形成的场景策略。</p>}</section>
+      </div><div id="view-evidence" hidden={view !== "evidence"}>
+      <section id="evidence-section" className="workspace" aria-labelledby="evidence-title"><p className="eyebrow">事实依据</p><h2 id="evidence-title">每个主张，都能找到出处</h2>{run.evidence ? <>
         <p className="library">{run.evidence.product.displayName} · {run.evidence.provenanceMode} · {new Date(run.evidence.retrievedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</p><p className="hint">{run.evidence.product.resolutionBasis}</p>
         {!!run.evidence.conflicts.length && <aside className="notice error"><strong>资料冲突 · 当前成稿停止</strong><ul>{run.evidence.conflicts.map((conflict, i) => <li key={i}>{conflict.fieldKey}：{conflict.message}{conflict.sourceIds.map(id => { const source = run.evidence?.sources.find(s => s.citationKey === id); return source ? <Source key={id} source={source} /> : <p key={id}>来源尚未映射</p>; })}</li>)}</ul></aside>}
         {!!run.evidence.coverageGaps.length && <aside className="notice"><strong>资料 / 图片缺口</strong><ul>{run.evidence.coverageGaps.map((gap, i) => <li key={i}>{gap}</li>)}</ul></aside>}
         <div className="facts">{run.evidence.facts.map((fact, i) => <details id={`fact-${fact.factId}`} key={fact.factId} className="fact"><summary><span className="fact-number">F{String(i + 1).padStart(2, "0")}</span>{fact.supportedStatement}<span className="fact-status">{({ supported: "有依据", unconfirmed: "待确认", conflicted: "有冲突" })[fact.status]}</span></summary>{!!fact.qualifiers.length && <p>适用条件：{fact.qualifiers.join("；")}</p>}{fact.sourceIds.map(id => { const source = run.evidence?.sources.find(item => item.citationKey === id); return source ? <Source key={id} source={source} /> : <p className="error" key={id}>此事实缺少可展示的来源映射。</p>; })}</details>)}</div>
         <details className="all-sources"><summary>全部安全来源（{run.evidence.sources.length}）</summary>{run.evidence.sources.map(source => <Source key={source.citationKey} source={source} />)}</details>
       </> : <p className="empty">等待知识库资料读取。此处只显示必要短摘录与来源定位。</p>}</section>
-      <section className="workspace" aria-labelledby="draft-title"><div className="panel-head"><div><p className="eyebrow">04 / 图文与修改</p><h2 id="draft-title">{run.brief.platform ? platforms[run.brief.platform] : "平台待明确"}草稿</h2></div><span className={`badge ${dirty ? "blocked" : run.exportable ? "pass" : "blocked"}`}>{dirty ? "本地编辑 · 待保存重验" : run.exportable ? "当前稿可请求导出" : "尚不可导出"}</span></div>
+      </div><div hidden={view !== "content"}>
+      <section className="workspace" aria-labelledby="draft-title"><div className="panel-head"><div><p className="eyebrow">图文与修改</p><h2 id="draft-title">{run.brief.platform ? platforms[run.brief.platform] : "平台待明确"}草稿</h2></div><span className={`badge ${dirty ? "blocked" : run.exportable ? "pass" : "blocked"}`}>{dirty ? "本地编辑 · 待保存重验" : run.exportable ? "当前稿可请求导出" : "尚不可导出"}</span></div>
         {dirty && <p className="notice">内容或任务已有修改，旧核验不能用于当前编辑内容。保存修改后重新核验；换平台、场景或产品请保存任务并重新执行。</p>}
-        {draft ? <div className="draft-editor"><a className="back-to-preview" href="#content-preview">查看上方平台预览 ↑</a><h3>编辑图文</h3><label>标题<input value={draft.title} maxLength={300} onChange={e => changeDraft({ ...draft, title: e.target.value })} /></label><label>导语<textarea value={draft.lead} maxLength={3000} rows={3} onChange={e => changeDraft({ ...draft, lead: e.target.value })} /></label>{draft.bodyBlocks.map((block, index) => <div className="body-editor" key={block.blockKey}><label>正文 {index + 1} · {block.blockKey}<textarea value={block.text} maxLength={12000} rows={5} onChange={e => changeDraft({ ...draft, bodyBlocks: draft.bodyBlocks.map((item, i) => i === index ? { ...item, text: e.target.value } : item) })} /></label><div className="fact-links">事实依据：{block.factIds.length ? block.factIds.map(id => { const factIndex = run.evidence?.facts.findIndex(fact => fact.factId === id) ?? -1; return <a key={id} href={`#fact-${id}`}>{factIndex < 0 ? "未映射事实" : `F${String(factIndex + 1).padStart(2, "0")}`}</a>; }) : <span>无产品事实引用</span>}</div></div>)}<label>行动引导 / CTA<textarea value={draft.callToAction} maxLength={1500} rows={2} onChange={e => changeDraft({ ...draft, callToAction: e.target.value })} /></label><label>标签（每行一个）<textarea rows={2} value={draft.tags.join("\n")} onChange={e => changeDraft({ ...draft, tags: e.target.value.split("\n") })} /></label>
+        {draft ? <div className="draft-editor"><a className="back-to-preview" href="#content-preview">查看上方平台预览 ↑</a><h3>编辑图文</h3><label>标题<input value={draft.title} maxLength={300} onChange={e => changeDraft({ ...draft, title: e.target.value })} /></label><label>导语<textarea value={draft.lead} maxLength={3000} rows={3} onChange={e => changeDraft({ ...draft, lead: e.target.value })} /></label>{draft.bodyBlocks.map((block, index) => <div className="body-editor" key={block.blockKey}><label>正文 {index + 1} · {block.blockKey}<textarea value={block.text} maxLength={12000} rows={5} onChange={e => changeDraft({ ...draft, bodyBlocks: draft.bodyBlocks.map((item, i) => i === index ? { ...item, text: e.target.value } : item) })} /></label><div className="fact-links">事实依据：{block.factIds.length ? block.factIds.map(id => { const factIndex = run.evidence?.facts.findIndex(fact => fact.factId === id) ?? -1; return <a key={id} href={`#fact-${id}`} onClick={event => { event.preventDefault(); openFact(id); }}>{factIndex < 0 ? "未映射事实" : `F${String(factIndex + 1).padStart(2, "0")}`}</a>; }) : <span>无产品事实引用</span>}</div></div>)}<label>行动引导 / CTA<textarea value={draft.callToAction} maxLength={1500} rows={2} onChange={e => changeDraft({ ...draft, callToAction: e.target.value })} /></label><label>标签（每行一个）<textarea rows={2} value={draft.tags.join("\n")} onChange={e => changeDraft({ ...draft, tags: e.target.value.split("\n") })} /></label>
           <h3>已选图片 · {draft.selectedImages.length} 张</h3><p className="hint">图片按下列顺序编排；每张必须来自当前{sourceLabel}事实包，型号有依据，不能重复凑数。</p><div className="selected-images">{draft.selectedImages.map((selected, index) => { const image = run.evidence?.images.find(item => item.imageId === selected.imageId); return <article className="image-editor" key={selected.imageId}>{image ? <><figure><img src={`/api/runs/${run.runId}/assets/${image.imageId}`} alt={selected.caption || image.modelMatchSummary} onError={e => { const key = `${run.runId}/${image.imageId}`; setAssetErrors(items => items.includes(key) ? items : [...items, key]); e.currentTarget.hidden = true; e.currentTarget.parentElement?.setAttribute("data-image-error", "图片当前无法读取，不能视为完整可用素材。请重新执行取证。"); }} onLoad={e => { const key = `${run.runId}/${image.imageId}`; setAssetErrors(items => items.filter(item => item !== key)); e.currentTarget.hidden = false; e.currentTarget.parentElement?.removeAttribute("data-image-error"); }} /><figcaption>{image.fileName} · {image.width} × {image.height}<br />{image.modelMatchSummary}</figcaption></figure><Source source={image.sourceView} /></> : <p className="error">图片不在当前事实包，需重新取证。</p>}<label>图片说明<textarea maxLength={600} rows={2} value={selected.caption} onChange={e => changeDraft({ ...draft, selectedImages: draft.selectedImages.map((item, i) => i === index ? { ...item, caption: e.target.value } : item) })} /></label><label>图片用途<input maxLength={400} value={selected.purpose} onChange={e => changeDraft({ ...draft, selectedImages: draft.selectedImages.map((item, i) => i === index ? { ...item, purpose: e.target.value } : item) })} /></label><div className="form-grid"><label>插入区块<select value={selected.placement.blockKey} onChange={e => changeDraft({ ...draft, selectedImages: draft.selectedImages.map((item, i) => i === index ? { ...item, placement: { ...item.placement, blockKey: e.target.value } } : item) })}>{[...new Set(draft.bodyBlocks.map(block => block.blockKey))].map(key => <option key={key} value={key}>{key}</option>)}</select></label><label>插入位置<select value={selected.placement.position} onChange={e => changeDraft({ ...draft, selectedImages: draft.selectedImages.map((item, i) => i === index ? { ...item, placement: { ...item.placement, position: e.target.value as "before" | "after" } } : item) })}><option value="before">区块之前</option><option value="after">区块之后</option></select></label></div><div className="toolbar"><button type="button" className="secondary" disabled={index === 0} onClick={() => changeDraft(moveSelectedImage(draft, index, -1))}>上移</button><button type="button" className="secondary" disabled={index === draft.selectedImages.length - 1} onClick={() => changeDraft(moveSelectedImage(draft, index, 1))}>下移</button><button type="button" className="secondary" onClick={() => changeDraft({ ...draft, selectedImages: draft.selectedImages.filter((_, i) => i !== index) })}>移除图片</button></div></article>; })}</div>
           {!!run.evidence?.images.length && <details className="image-candidates"><summary>从{sourceLabel}候选中选择图片（{run.evidence.images.length}）</summary><div className="candidate-grid">{run.evidence.images.map(image => { const selected = draft.selectedImages.some(item => item.imageId === image.imageId); const eligible = image.availability === "verified" && image.modelMatch === "confirmed" && image.productKey === run.evidence?.product.productKey; return <article key={image.imageId}><figure><img src={`/api/runs/${run.runId}/assets/${image.imageId}`} alt={image.modelMatchSummary} loading="lazy" /><figcaption>{image.fileName}</figcaption></figure><p>{image.modelMatchSummary}</p><p className="hint">{image.sourceView.sourceTitle} · {image.sourceView.locatorLabel}</p><button type="button" className="secondary" disabled={selected || !eligible || draft.selectedImages.length >= 6} onClick={() => changeDraft({ ...draft, selectedImages: [...draft.selectedImages, { imageId: image.imageId, caption: "", purpose: "", placement: { blockKey: draft.bodyBlocks[0]?.blockKey ?? "lead", position: "after" } }] })}>{selected ? "已选用" : eligible ? "加入当前稿" : "依据 / 可访问性未通过"}</button></article>; })}</div></details>}
           <div className="toolbar"><button type="button" disabled={busy || !draftDirty || inputDirty} onClick={() => { const parsed = DraftEditable.safeParse(draft); if (parsed.success) void action("revise", { draft: parsed.data }); else setError("草稿字段超出长度或数量限制，请检查后再保存。"); }}>保存图文修改</button><button type="button" className="secondary" disabled={busy || dirty || !!run.activeOperationId} onClick={() => void action("revalidate")}>重新核验当前稿</button><button type="button" className="secondary" disabled={busy || dirty || !run.evidence || !run.strategy} onClick={() => void action("regenerate")}>使用当前取证重新生成</button></div>{inputDirty && <p className="hint">任务条件已改变，请先保存任务并重新执行，避免将旧策略的草稿用于新任务。</p>}
         </div> : <p className="empty">资料与图片满足条件后，显示实际模型生成的可编辑图文；资料不足不会替换为固定样稿。</p>}
       </section>
-      <section id="validation-section" className="workspace" aria-labelledby="validation-title"><div className="panel-head"><div><p className="eyebrow">05 / 核验与导出</p><h2 id="validation-title">{dirty ? "编辑内容尚未核验" : run.validation?.status === "passed" ? "当前版本核验通过" : run.validation?.status === "stale" ? "旧核验已失效" : "逐项检查，修订后再验"}</h2></div></div>
+      </div><div id="view-verification" hidden={view !== "verification"}>
+      <section id="validation-section" className="workspace" aria-labelledby="validation-title"><div className="panel-head"><div><p className="eyebrow">核验与导出</p><h2 id="validation-title">{dirty ? "编辑内容尚未核验" : run.validation?.status === "passed" ? "当前版本核验通过" : run.validation?.status === "stale" ? "旧核验已失效" : "逐项检查，修订后再验"}</h2></div></div>
         {run.validation && <><p className="report-meta">以下报告绑定第 {run.validation.checkedVersion} 版 · 语义核验：{run.validation.semanticMode} · {new Date(run.validation.checkedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}{dirty ? " · 对本地编辑内容无效" : ""}</p><ul className="validation-checks">{run.validation.checks.map((check, index) => <li key={`${check.name}-${index}`}><span className={`stage-state ${check.status === "passed" ? "pass" : "fail"}`}>{({ passed: "通过", failed: "未通过", not_run: "未执行" })[check.status]}</span><div><strong>{check.name}</strong><p>{check.summary}</p></div></li>)}</ul></>}
         {!!uniqueIssues.length && <Issues issues={uniqueIssues} />}
         {!run.validation && !uniqueIssues.length && <p className="empty">等待当前版本核验。模型自述“已通过”不作为通过证据。</p>}
@@ -226,6 +281,8 @@ export default function MarketingWorkbench() {
         <div className="export-bar"><div><strong>{exportAllowed ? "可请求导出当前稿" : "完整成稿导出已关闭"}</strong><p>服务端将复核当前任务、稿件、事实、策略与图片；修改后必须重新核验。</p></div><div className="toolbar"><button type="button" disabled={!exportAllowed} onClick={() => void exportContent(true)}>复制核验成稿</button><button type="button" disabled={!exportAllowed} onClick={() => void exportContent(false, "html")}>下载图文 HTML</button><button type="button" className="secondary" disabled={!exportAllowed} onClick={() => void exportContent(false)}>导出 Markdown</button></div></div>
         {exported && <details className="export-preview"><summary>本次服务端导出内容 · v{exported.version} · {exported.provenanceMode}</summary><pre>{exported.content}</pre></details>}
       </section>
+      </div>
     </>}
+    {!run && ["strategy", "evidence", "verification"].includes(view) && <section className="workspace empty-view"><h2>{view === "strategy" ? "场景策略等待任务输入" : view === "evidence" ? "事实依据等待读取" : "核验报告等待实际成稿"}</h2><p>完成任务输入并执行后，这里会显示服务端返回的实际结果。</p><button className="secondary" onClick={() => setView("task")}>填写任务</button></section>}
   </div>;
 }

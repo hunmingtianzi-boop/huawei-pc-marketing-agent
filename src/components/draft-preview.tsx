@@ -4,12 +4,12 @@ import type { z } from "zod";
 import type { ImageView, Platform } from "@/contracts";
 import type { DraftEditable } from "@/contracts/business";
 
-type Props = { runId: string; draft: DraftEditable; images: z.infer<typeof ImageView>[]; platform?: z.infer<typeof Platform> };
+type Props = { runId: string; draft: DraftEditable; images: z.infer<typeof ImageView>[]; platform?: z.infer<typeof Platform>; onFactClick?: (id: string) => void };
 const labels = { wechat_article: "公众号文章", xiaohongshu: "小红书笔记", wechat_moments: "朋友圈动态" };
 export function nextPreviewImage(index: number, total: number, direction: -1 | 1): number {
   return total < 1 ? 0 : (index + direction + total) % total;
 }
-export default function DraftPreview({ runId, draft, images, platform = "wechat_article" }: Props) {
+export default function DraftPreview({ runId, draft, images, platform = "wechat_article", onFactClick }: Props) {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const found = draft.selectedImages.findIndex(image => image.imageId === activeImageId);
   const currentIndex = found < 0 ? 0 : found;
@@ -27,7 +27,7 @@ export default function DraftPreview({ runId, draft, images, platform = "wechat_
     </figure>;
   }
   function factLinks(ids: string[]) {
-    return !!ids.length && <div className="fact-links">{ids.map((id, index) => <a key={id} href={`#fact-${id}`}>查看本段依据 {index + 1}</a>)}</div>;
+    return !!ids.length && <div className="fact-links">{ids.map((id, index) => <a key={id} href={`#fact-${id}`} onClick={onFactClick ? event => { event.preventDefault(); onFactClick(id); } : undefined}>查看本段依据 {index + 1}</a>)}</div>;
   }
   function body() {
     return draft.bodyBlocks.map(item => <div className="preview-text-block" key={item.blockKey}><p>{item.text}</p>{factLinks(item.factIds)}</div>);
@@ -62,7 +62,7 @@ export default function DraftPreview({ runId, draft, images, platform = "wechat_
       {draft.bodyBlocks.map(item => block(item.blockKey, <><p>{item.text}</p>{factLinks(item.factIds)}</>))}
       {block("callToAction", draft.callToAction && <p className="preview-cta">{draft.callToAction}</p>)}{tags}
       {draft.selectedImages.filter(image => !knownKeys.includes(image.placement.blockKey)).map(image => <div key={image.imageId}><p className="error">此图插入位置待确认：{image.placement.blockKey}</p>{picture(image)}</div>)}
-      <div className="wechat-end-mark">— 本文为未发布草稿 —</div>
+      <div className="wechat-end-mark">本文为未发布草稿</div>
     </div>
   </article>;
 }

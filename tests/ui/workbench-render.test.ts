@@ -9,7 +9,9 @@ test("SSR initial workspace labels three platforms and defaults to local without
   assert.ok(markup.includes('value="local" selected=""'));
   assert.ok(markup.includes("synthetic · 人工样例，仅验证逻辑"));
   assert.ok(markup.includes("从本地知识库选择产品"));
-  assert.ok(markup.includes('href="#content-preview"'));
+  assert.ok(markup.includes('aria-controls="view-content"'));
+  assert.ok(markup.includes('aria-current="page"'));
+  assert.ok(markup.includes('id="view-content" hidden=""')); 
   assert.ok(markup.includes('id="content-preview"'));
   assert.equal(markup.includes("复制核验成稿"), false);
   assert.equal(markup.includes("当前版本核验通过"), false);
