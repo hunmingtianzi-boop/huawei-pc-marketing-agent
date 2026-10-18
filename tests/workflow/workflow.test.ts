@@ -127,3 +127,10 @@ test("concrete X Pro model is not trapped in numeric-only clarification", () => 
  const brief=clarifyTask(TaskInput.parse({productRequest:"HUAWEI MateBook X Pro",targetAudience:"新生",useScenario:"开学",contentGoal:"咨询",platform:"wechat_moments"}),{taskId:randomUUID(),briefVersion:1});
  assert.ok(!brief.missingFields.includes("productRequest"));assert.equal(brief.productSelection,null);
 });
+
+test("evidenced 100% sRGB is a specification while 100% success remains blocked", async () => {
+ const context=fixture();const fact=context.evidence.facts[0];fact.supportedStatement="屏幕覆盖 100% sRGB 色域。";fact.value="100% sRGB";fact.qualifiers=[];context.evidence.snapshotDigest=evidenceDigest(context.evidence);
+ const d=(await generateDraft(context,synthetic)).draft;
+ const valid=await validateDraft({...context,draft:d},synthetic);assert.equal(valid.status,"passed",JSON.stringify(valid.issues));
+ const bad=edited(d,x=>x.title="100%成功，保证结果");const rejected=await validateDraft({...context,draft:bad},synthetic);assert.equal(rejected.status,"failed");assert.ok(rejected.issues.some(i=>i.code==="PROHIBITED_MARKETING_CLAIM"));
+});

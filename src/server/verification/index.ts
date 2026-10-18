@@ -54,7 +54,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
   const approvedNumbers = new Set(numberClaims(`${basis} ${evidence.product.displayName}`));
   const approvedDigits = new Set(digits(`${basis} ${evidence.product.displayName}`));
   for (const [location, value] of visible) {
-    if (/(?:行业|全网|全球|世界|销量)?第[一1]|最强|最佳|顶级|遥遥领先|百分百|100%|保证(?:成功|结果|不卡|流畅)|绝不|永不|吊打|碾压|竞品垃圾/.test(value)) add("PROHIBITED_MARKETING_CLAIM", "compliance", location, "删除绝对化、虚假保证或无依据对比贬低表述。", [], "remove");
+    if (/(?:行业|全网|全球|世界|销量)?第[一1]|最强|最佳|顶级|遥遥领先|百分百|100%\s*(?:成功|满意|安全|无误|保证|不卡|流畅|适合|兼容)|保证(?:成功|结果|不卡|流畅)|绝不|永不|吊打|碾压|竞品垃圾/.test(value)) add("PROHIBITED_MARKETING_CLAIM", "compliance", location, "删除绝对化、虚假保证或无依据对比贬低表述。", [], "remove");
     if (/亲测|我(?:实测|用了|用过|体验)|使用一周|实测(?:跑分|续航|结果)|用户(?:一致|都说|评价)|好评率/.test(value)) add("FABRICATED_EXPERIENCE", "compliance", location, "不得编造亲测、软件实测或用户评价。", [], "remove");
     if (/价格|售价|到手价|仅售|只要\d|\d\s*元|补贴|优惠|立减|库存|现货|赠送|权益/.test(value) && !supportedFacts.some(f => /价格|售价|补贴|优惠|库存|赠送|权益/.test(`${f.fieldKey} ${f.supportedStatement}`) && normalized(value).includes(normalized(f.supportedStatement)))) add("UNSUPPORTED_PRICE_OR_BENEFIT", "compliance", location, "价格、补贴、库存或权益缺乏本次可引用依据，应删除或改为咨询适用性。", [], "remove");
     if (/销量|奖项|冠军|获奖/.test(value) && !supportedFacts.some(f => normalized(value).includes(normalized(f.supportedStatement)) && /销量|奖项|冠军|获奖/.test(f.supportedStatement))) add("UNSUPPORTED_SOCIAL_PROOF", "compliance", location, "销量或奖项缺少原文依据。", [], "remove");

@@ -53,3 +53,4 @@
 S2开发任务均实际completed；worker提交分别db0d0f0/a241ebf、c0eb4b1、3717402，主控逐个集成为8e73239/3e78ec2、d1a9706、a7670be。工具无销毁接口，不声称销毁。9951bd8为当前集成检查基线。S2-REVIEW正在主目录只读检查，唯一可写范围为忽略证据目录.local-evidence/stage2/reviewer/，完整角色TOML随任务单下发；不代替G4。
 
 主控集成修复所有权补充：开发worker已completed后，主控临时负责src/server/workflow/index.ts、src/components/marketing-workbench.tsx及对应tests/workflow、tests/ui中reviewer可复现问题的最小修复，避免原worker基线与集成版本分歧；不扩展其它功能。原worktree保留已提交交付快照。
+主控临时修复范围追加src/server/verification/index.ts：reviewer发现有依据的100% sRGB参数被当绝对宣传误拦截，仅修复此项与相关workflow回归检查。
