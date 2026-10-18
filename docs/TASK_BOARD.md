@@ -74,3 +74,6 @@ worktree保留已提交交付快照，安装用node_modules符号链接已移除
 - 主控负责设计参考、真实浏览器检查、根配置及文档；私有证据写.local-evidence/ui-multipage/。实现完成后顺序审查集成，再启动只读review。
 - 当前状态：IN PROGRESS。无对外发布/提交动作。
 - UI-REVIEW：/root/ui_review，只读主目录，base645dc7e，先审计状态保护与测试验收清单；稳定集成后独立复核。仅可写.local-evidence/ui-multipage/review/报告与临时产物。
+- 用户最新指令“直接快速完成，不用审阅”：UI-REVIEW 已中断，不再等待独立审阅；主控仅集中必要测试、类型和构建并启动新版。既有预审不作为本版验收结论。
+- UI-MULTIPAGE DONE：worker1a5a7d9 → 主控e45e20c，15个UI/测试文件，未越界；152/152、类型、构建和8项HTTP观察PASS，新版3210已运行。单个常驻Workbench保持状态，未引入额外Provider或依赖。截图home.jpg已取得。
+- UI-REVIEW CANCELLED：按用户最新要求中断，只保留原版16项预审事实，不宣称独立验收新版。UI worker completed；没有等待集成的任务。工作树保留已提交快照，node_modules临时符号链接移除；无销毁工具不声称已销毁聊天。
