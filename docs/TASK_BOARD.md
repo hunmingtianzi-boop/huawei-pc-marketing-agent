@@ -42,3 +42,11 @@ worktree保留已提交交付快照，安装用node_modules符号链接已移除
 - DELIVERY-style: /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/delivery-style / codex/delivery-style / base b0a89b90709723d72bf5cd5bf4ed8b4257c46df8 / contract2.1.0 / scope src/server/workflow/**, src/server/llm/**, src/server/verification/**, prompts/runtime/**, tests/workflow/**.
 
 - DELIVERY-preview: /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/delivery-preview / codex/delivery-preview / base b0a89b90709723d72bf5cd5bf4ed8b4257c46df8 / contract2.1.0 / scope src/app/** excluding api, src/components/**, src/styles/**, tests/ui/**.
+
+### 本轮实际集成
+
+- /root/ima_engineer completed：e91d51f→8518d86，d813a93→82cb250；主控提供脱敏目录结构以修正Windows别名，worker未读取真实资料。
+- /root/delivery_style completed：7f5c690→5b28326。
+- /root/ui_engineer completed：4395765→3bb377f。
+- 三个worker范围审查PASS，顺序集成；无新增依赖。主控负责local runtime/catalog API、运行/资产/HTML导出及真实取证和模型联调。
+- 集成版145项测试、非增量tsc与生产build PASS；真实local业务8项观察通过，含5组平台/场景/型号结果与改稿闭环。稳定版本只读审查随后记录。

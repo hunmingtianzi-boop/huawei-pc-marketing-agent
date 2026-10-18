@@ -1,60 +1,44 @@
 # 当前状态与交接
 
-更新时间：2026-10-18T07:42:18.703Z。**第二阶段本地实现与G2完成；G3部分完成，仍BLOCKED；G4 NOT_RUN。**
+2026-10-18，本轮为**本机交付1**：用户明确授权从本地知识库读取，不走ima API；增加三平台模拟预览及自含图片HTML。G1/G2既有基线保留；G3-local PASS（真实资料+实际模型）；G4-local浏览器与独立评审执行中。正式赛事G3-ima fresh和视频/外链另列，不以local冒充实时ima。
 
-## 当前基线与启动
+## 基线、代码和启动
 
-- 项目/Git根：/Users/zhouzihan/Documents/ChatGPT/华为黑客松；当前分支`codex/stage2`。已验证应用源码提交`cdbc88387ce76c634c137f3341e69b2ad0ef4854`；之后只有验收脚本和交接文档，最终HEAD以`git rev-parse HEAD`确认。
-- 实际接续HEAD为`9bbb976`且工作区干净。G1源码`554ddba873fb606a9bacd1169ff45d0312b4ba6d`与已有证据有效，相关字段/目录/CSV/受控访问规则沿用；本阶段新增错误220021已实测分类。
-- 接入契约1.0.0保留；新增业务2.0.0。主控先在`6d01f36`提交schema、签名与API统一基线，再创建三个独立worktree。
-- 正常生产预览为 http://127.0.0.1:3210/ ，默认live且拒绝创建synthetic。重启：`npm run build`，再`npm start -- --port 3210`。开发：`npm run dev -- --port 3210`；安装`npm ci`。详细运行/模型步骤见README。
-- 无Git远端；没有推送、公开部署、对外发送或赛事提交。所有原始资料、图片、凭证与运行缓存只在本机忽略目录。
+- 项目 /Users/zhouzihan/Documents/ChatGPT/华为黑客松，分支codex/stage2。本轮开始HEAD 5b911808402a02d451ccaf09358362839e8f5850、工作区干净。契约提交b0a89b90709723d72bf5cd5bf4ed8b4257c46df8后创建三个独立worktree。
+- 接入1.0.0不变；业务2.1.0兼容已保存2.0.0。主控唯一，维护公共契约/API/运行/资产/根依赖。集成源码3bb377f；最终HEAD以git rev-parse HEAD为准。
+- npm ci；本机.env.local配置LLM三项；知识库放根目录或LOCAL_KB_ROOT；npm run build，再npm start -- --port 3210。当前生产预览 http://127.0.0.1:3210/ 。Node26/npm11、Next16/React19、单一package-lock，无新增依赖。见README、USER_GUIDE。
 
-## G2：PASS
+## 本轮已验证
 
-三平台输入/必要澄清/场景策略/ima事实与多图候选/实际模型/逐项核验/图文编辑/重验/服务端导出已连接。内容、标题、图注、选图/顺序/位置和任务条件变更撤销旧核验；当前版本、稿摘要、证据ID/摘要、策略ID/摘要、briefVersion双向绑定，operationId+version比较防止旧请求回写。直接导出未通过稿与旧版本被服务端拒绝，导出前再次读取选图字节验证摘要。
+- 本机真实目录10个明确型号进入菜单；计数为最多6张已核查候选，不是全库图片总数。MateBook14（鸿蒙版）13事实、18来源、4张摘要不同图片，无冲突。实际本地取证脚本callIma/fetchMedia计数均0；production local明确拒绝网络取材。
+- 实际模型gpt-4.1、https://api.openai-next.com/v1（提供方路由名，未认证底层模型），最小请求PASS，生成与独立语义核验分别实际请求。凭证只在主目录.env.local（0600），不回传客户端或worker。
+- 集成版145/145 synthetic/模拟传输/SSR/状态测试PASS，非增量tsc、生产build PASS。包括旧请求迟到、直接导出未通过稿、无依据价格/亲测、资料冲突、图片不足/损坏/重复、平台更换、标题图注失效、HTML转义/内嵌及local拒绝合成模型。
+- 朋友圈单卖点短动态；小红书短标题/清单/标签和可操作图集；公众号导语/分节解释/内嵌图。均明确模拟未发布，无虚构互动数字。
 
-- 118/118 synthetic、模拟传输、状态和SSR检查 PASS；非增量tsc、根Next生产build PASS。保留原IMA分页/空搜索回退/未知协议/访问错误回归。
-- 实际本机HTTP synthetic三平台闭环PASS：直接导出拒绝、图片读取、风险主张省略审计、标题与图注修改失效、重验及当前版导出。
-- 定向覆盖：输入不足、错型号/错图、资料冲突、图片不足/重复、条件与单位、价格/亲测/绝对宣传、模型失败、旧请求迟到、图片损坏、平台变更、缓存过期/冲突重试。synthetic不计真实成稿。
-- 浏览器人工样例完整改稿重验导出PASS；真实v64三张图片预览、正文依据定位/短摘录与下载导出PASS。4张真实缓存图片经业务HTTP逐张取回、完整解码、尺寸/摘要比对PASS。
-- 凭证扫描：受控配置0600；跟踪文件、浏览器JS和3个安全DTO没有当前凭证值或provider私有字段；见safety.json。没有把密钥传给worker或复制进worktree。
-- 只读reviewer实际复现并主控修复多项P2：异步新输入覆盖、无数字具体型号、图片位置、合法100%sRGB、核验事实投影、冲突缓存、无引用断言及小数格式误拒。最终`7f837b9`复核PASS，118测试及类型复核通过；之后仅CTA提示词按已有平台策略改写，不改变校验/导出。**这不是G4。**
+## G3-local：PASS
 
-证据在`.local-evidence/stage2/`，公开安全摘要为`docs/evidence/stage2-2026-10-18.json`，含证据哈希。
+npm run verify:delivery 实际执行输入→策略→本地原文/图→实际生成→独立核验→编辑→核验失效→重验→导出。全8项观察通过，含目录、图片不足项；5组不同平台/场景/型号，另有1个改稿版本。均非synthetic/replay、未人工替换模型文稿。
 
-## G3：部分完成 / BLOCKED
+| 成果 | runId / 版本 | 图片 | 状态 |
+|---|---|---|---|
+| MateBook14 / 新生 / 朋友圈 | 5d34d6a6-491a-45db-8c22-1503cdc14464 v1 | 1 | PASS |
+| 上述标题+图注修改重验 | 同run v2 | 1 | PASS，修改后导出409 |
+| MateBook14 / 新生 / 小红书 | efffc7e0-38c5-4b80-aa75-13302489f943 v1 | 3 | PASS |
+| MateBook14 / 出差 / 公众号 | 8d35a25e-812c-4b77-81b9-79e710c776fd v1 | 2 | PASS |
+| 同产品同朋友圈换出差 | 5d34d6a6-491a-45db-8c22-1503cdc14464 v4 | 1 | PASS，策略变化 |
+| Pro S / 出差 / 朋友圈 | 6fda9bcf-5a8e-4c9e-9beb-ebd77b058845 v1 | 1 | PASS，事实/图片更换 |
+| D16 2024 / 新生 / 小红书 | fac0b7ab-43a0-4f3a-b51a-62fed9b9b565 v1 | 2，缺1 | PASS，INSUFFICIENT_IMAGES且导出409 |
 
-实际型号为HUAWEI MateBook 14（鸿蒙版）。本次指定ima库确实读取原文，取得13条事实、18个安全来源和4张型号依据明确且内容摘要不同的图片；无资料冲突。独立多图证据`.local-data/business-preflight/db00c193-fee7-43b1-ba34-984d3b8f667a/`；当前任务原始取证时间为`2026-10-18T07:06:00.392Z`。
+成稿/HTML及当版快照在.local-data/delivery-results/，运行私有记录在.local-data/runs/<runId>/。朋友圈同任务换场景复用该任务本次local快照，保留retrievedAt并逐图检查，不声称重新读源文件。其它新任务实际读取本地原件。风险宣传请求未进入通过稿，保留REQUESTED_CLAIM_OMITTED审计。
 
-随后ima在get_media_info实际返回220021：“资料获取次数已达上限，请明天再尝试”。错误保留于`.local-data/runs/dd912072-850d-4e7f-833e-4cfaa510c356/`，不是无资料或没有权限。停止重复请求。下表为同一真实任务的不同版本结果，使用该任务本次已实际取得的live快照与真实模型，保留原retrievedAt，每次重查缓存图片；**不是每组重新连库，也不是synthetic/replay或人工替换模型稿。**
+## 证据、评审与协作
 
-| 成果版本 | 平台 / 场景 | 图片 | 核验/导出 | 本机私有产物 |
-| --- | --- | --- | --- | --- |
-| v53 | 朋友圈 / 新生开学 | 1 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v53.md |
-| v54 | 朋友圈 / 新生开学 | 1 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v54.md |
-| v56 | 小红书 / 新生开学 | 3 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v56.md |
-| v64 | 小红书 / 出差办公 | 3 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v64.md |
-| v60 | 公众号 / 出差办公 | 2 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v60.md |
-| v62 | 朋友圈 / 出差办公 | 1 | PASS | .local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v62.md |
+.local-evidence/delivery/：tests.log、typecheck.log、build.log、model-probe.json/log、local-source.json、business.json/log和浏览器截图。三个worker提交经范围审查后顺序集成，SHA/路径见TASK_BOARD。工具没有销毁接口，仅报告实际completed，不声称已销毁线程。凭证和原始资料没有复制到worktree。
 
-共5组不同平台/场景成果（另有v54修改闭环），覆盖2类场景、全部3个平台。v53→54实际执行标题/图注修改、旧报告stale、直接导出409、重新独立核验及导出。新生/出差对照的卖点顺序、正文引用事实与图片用途有变化；三平台结构、图数和CTA不同，contrast-check.json为实际产物对照。
+## 限制、待验证与交付边界
 
-最新主批次6项中5通过，v58因SOURCE_MISSING停稿；定向重新生成v64通过，原失败未删除。此前模型曾加无依据阅读效果、UUID或重复块，也被拦截且未导出；模型响应与诊断仅存在各run/operation私有目录。自动生成并非保证每次通过，遇到问题需修改或重新生成，不能靠放宽核验冒充成功。
-
-**尚未完成的G3必要项：B-06另一型号实际取证/图文对照，以及额度恢复后的fresh live复验。已知当日额度耗尽后没有继续请求另一型号，不假造已执行。G3不得整体PASS。**
-
-## 实际模型与配置
-
-用户已有服务`https://api.openai-next.com/v1`，选用`gpt-4.1`，LLM三项已保存主目录.env.local（0600、忽略）。实际模型列表HTTP200、最小JSON请求PASS；生成与独立语义核验分别实际调用。仅报告路由名称，不声称已认证底层实现。最初未配置时真实预检BLOCKED已保留；gpt-4.1-mini曾smoke成功但业务稿未通过，随后采用gpt-4.1。没有给worker秘密或真实私有资料；正常live不回退人工样例。
-
-## 并行任务与集成
-
-三个真实worker均completed，代码按范围审查后顺序集成：ima db0d0f0/a241ebf→8e73239/3e78ec2；workflow c0eb4b1→d1a9706；UI 3717402→a7670be。主控负责共享契约/API/资产/运行、根依赖与后续最小集成修复。worktree绝对路径、基准与允许范围见TASK_BOARD；分支快照保留，临时依赖符号链接已移除，源码干净，无待集成提交。客户端工具无销毁接口，仅报告实际completed状态。依赖和单一npm锁文件沿用，未新增依赖。
-
-## 第三阶段前置与未验证
-
-1. ima额度恢复后先复验访问，再选库内另一明确产品执行B-06，确认全部事实/图片重取且不残留MateBook14；补fresh三平台/场景证据并决定G3。现有有效证据可引用，不能把缓存当新查询。
-2. 从当前仓库新上下文执行prompts/03-review.md与ACCEPTANCE的G4；本阶段review不代替它。
-3. 尚未录制连续真实Demo视频、完成正式说明书/公开链接/魔搭及赛事提交；尚无公开服务身份认证、多用户/多进程存储、海报输出或图片原件打包导出。
-4. 其它型号/格式/所有媒体分支及账号昵称接口未全面验证；凭证可用不等于已验证昵称。Markdown包含图说明/来源/位置，原件仍在受控缓存。
+- 原G1真实ima PASS；第二阶段G3-ima部分通过、fresh与另一型号受220021当日额度BLOCKED的结论保留，见docs/evidence/stage2-2026-10-18.json及Git 5b91180的STATUS。本轮不请求ima，不声称额度恢复；local已补另一型号业务对照。
+- 正式连续Demo视频未录制；当前浏览器API无连续录屏入口，DEMO.md已给脚本，截图不冒充视频。
+- 没有Git远端、推送、公开部署、魔搭链接或赛事提交。SUBMISSION.md整理材料与待对外动作；不编造链接或评审可访问状态。
+- 本机单用户/单Node进程，没有公网认证、多用户/多进程锁；海报不在首版范围。不是平台发布或一键导入服务。
+- 新机需配置模型并提供有权限的原始知识库；源码包不携带凭证或完整资料。local快照不证明官网当前事实或fresh ima，正式赛事来源要求仍按赛题确认。
