@@ -7,7 +7,7 @@ type Fact = z.infer<typeof FactPoint>;
 const specSections = new Set(["操作系统", "尺寸与重量", "屏幕", "处理器", "存储", "内存", "无线连接", "电池", "接口", "键盘和触控板", "摄像头", "音频", "包装清单", "续航", "连接", "功能", "重量", "尺寸", "性能", "充电", "显示", "规格", "产品参数"]);
 const unsafe = /忽略.{0,12}(指令|规则|提示)|system\s*prompt|api[_ -]?key|执行.{0,10}(命令|脚本)|ignore.{0,20}(instruction|previous)/i;
 const clean = (s: string) => s.replace(/\*\*/g, "").replace(/`/g, "").trim();
-const modelBase = (s: string) => s.replace(/（鸿蒙版）$/, "").replace(/\s+/g, " ").trim();
+const modelBase = (s: string) => s.replace(/（(?:鸿蒙|Windows)版）$/, "").replace(/\s+/g, " ").trim();
 
 /** Deliberately conservative: structured rows and explicit specification sections only. */
 export function extractFacts(document: string, productKey: string, displayName: string, fileName: string, at: string) {
@@ -68,7 +68,7 @@ export function extractFacts(document: string, productKey: string, displayName: 
   }
   // The entire document remains private; only model tokens necessary to detect
   // a near-model contamination are inspected here.
-  const mentioned = [...document.matchAll(/(?:HUAWEI\s+)?MateBook\s+(?:X\s+Pro|D\s+\d+|\d+(?:\s+Pro)?)(?:（鸿蒙版）)?/gi)].map(m => modelBase(m[0]).replace(/^HUAWEI\s+/i, ""));
+  const mentioned = [...document.matchAll(/(?:HUAWEI\s+)?MateBook\s+(?:X\s+Pro|D\s+\d+|\d+(?:\s+Pro)?|Pro(?:\s+S)?|Fold\s*非凡大师)(?:\s+20\d{2})?(?:（(?:鸿蒙|Windows)版）)?/gi)].map(m => modelBase(m[0]).replace(/^HUAWEI\s+/i, ""));
   const target = modelBase(displayName).replace(/^HUAWEI\s+/i, "");
   if (mentioned.some(name => name.toLowerCase() !== target.toLowerCase())) {
     for (const fact of facts) fact.status = "conflicted";
