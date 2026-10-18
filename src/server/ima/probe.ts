@@ -5,6 +5,7 @@ import { ImaAdapter, type Entry } from "./adapter";
 import { credentials, TARGET_KB_NAME } from "./config";
 import { ImaError, normalizeError } from "./errors";
 import { officialTransport, inspectSkill } from "./transport";
+import { assertProductDocument, relativeImageReference } from "./source";
 import { fetchMedia, parseDocument, decodeImage } from "../assets/media";
 import { dataRoot, privateWrite, saveReport } from "../runs/probe-store";
 
@@ -45,11 +46,13 @@ export async function runProbe(productName: string): Promise<Report> {
     const candidates = found.entries.filter(e => e.title === "article.md" || e.title === productName);
     if (candidates.length !== 1) throw new ImaError("MODEL_AMBIGUOUS", true);
     const entry = candidates[0];
+    // Search results with media_id/title do not prove whether a hit is a folder.
+    // A full-name hit cannot be treated as a document without live mapping.
+    if (entry.title !== "article.md") throw new ImaError("MODEL_AMBIGUOUS", true);
     const access = await adapter.getMediaAccess(entry.mediaId);
     const content = await fetchMedia(access, 2 * 1024 * 1024);
     const document = parseDocument(content.bytes, content.contentType);
-    const header = document.split(/\r?\n/).find(line => /^#\s+/.test(line))?.replace(/^#\s+/, "").trim();
-    if (header !== productName) throw new ImaError("MODEL_PARAMETER_MISMATCH");
+    assertProductDocument(document, productName);
     await privateWrite(dir, "source.txt", document);
     await privateWrite(dir, "source-private.json", JSON.stringify({ entry, access, contentDigest: digest(content.bytes) }));
     const citationKey = randomUUID();
@@ -90,13 +93,7 @@ function shape(raw: unknown): unknown {
 
 async function documentImage(adapter: ImaAdapter, kb: string, article: Entry, document: string, productName: string) {
   if (!article.parentFolderId) throw new ImaError("IMAGE_MODEL_UNCONFIRMED", true);
-  const imageLinks = [...document.matchAll(/!\[([^\]]*)\]\(([^\s)]+)\)/g)];
-  const imageLink = imageLinks.find(link => link[1].trim() === productName);
-  const link = imageLink?.[2];
-  // First-stage supports only relative ima directory images, never arbitrary embedded URLs.
-  if (!link || link.startsWith("/") || link.includes(":") || link.includes("\\") || link.includes("?") || link.includes("#")) throw new ImaError("IMAGE_MODEL_UNCONFIRMED", true);
-  const parts = link.replace(/^\.\//, "").split("/");
-  if (parts.some(p => !p || p === ".." || p === ".") || parts.length > 3) throw new ImaError("IMAGE_MODEL_UNCONFIRMED", true);
+  const { parts, position } = relativeImageReference(document, productName);
   let folder = article.parentFolderId;
   let selected: Entry | null = null;
   for (let index = 0; index < parts.length; index++) {
@@ -109,5 +106,5 @@ async function documentImage(adapter: ImaAdapter, kb: string, article: Entry, do
   if (!selected) throw new ImaError("IMAGE_MODEL_UNCONFIRMED", true);
   const access = await adapter.getMediaAccess(selected.mediaId);
   if (access.mediaType !== 9) throw new ImaError("MEDIA_UNAVAILABLE");
-  return { entry: selected, access, position: document.slice(0, imageLink!.index).split("\n").length };
+  return { entry: selected, access, position };
 }

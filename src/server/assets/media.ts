@@ -59,7 +59,7 @@ export async function decodeImage(bytes: Buffer, contentType: string) {
   } catch { throw new ImaError("MEDIA_UNAVAILABLE"); }
 }
 export function parseDocument(bytes: Buffer, contentType: string) {
-  if (!/^(text\/(plain|markdown)|application\/octet-stream)$/.test(contentType)) throw new ImaError("SOURCE_UNAVAILABLE", true);
+  if (!["text/plain", "text/markdown", "text/x-markdown", "application/md", "application/markdown", "application/octet-stream"].includes(contentType)) throw new ImaError("SOURCE_UNAVAILABLE", true);
   let text: string;
   try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { throw new ImaError("SOURCE_UNAVAILABLE"); }
   if (text.length < 40 || /<(!doctype|html|form)[\s>]/i.test(text) || text.includes("\u0000")) throw new ImaError("SOURCE_UNAVAILABLE");

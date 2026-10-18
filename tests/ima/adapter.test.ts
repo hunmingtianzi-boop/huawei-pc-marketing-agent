@@ -39,7 +39,7 @@ test("synthetic: folder and media structures stay distinct, breadcrumb alias con
   assert.throws(() => normalizeEntry({ folder_id: "f", name: "folder", media_id: "other" }), errorCode("PROVIDER_SCHEMA_UNRECOGNIZED"));
 });
 test("synthetic: permission, update, network and malformed schema differ from empty result", () => {
-  for (const [code, expected] of [[110030, "PERMISSION_DENIED"], [-200, "SKILL_UPDATE_REQUIRED"], [-100, "NETWORK_ERROR"], [429, "RATE_LIMITED"], [2, "PROVIDER_ERROR"]] as const) assert.throws(() => envelope({ code }), errorCode(expected));
+  for (const [code, expected] of [[110030, "PERMISSION_DENIED"], [-200, "SKILL_UPDATE_REQUIRED"], [-100, "NETWORK_ERROR"], [110010, "NETWORK_ERROR"], [429, "RATE_LIMITED"], [110021, "RATE_LIMITED"], [2, "PROVIDER_ERROR"]] as const) assert.throws(() => envelope({ code }), errorCode(expected));
   assert.throws(() => envelope({ code: "0", data: {} }), errorCode("PROVIDER_SCHEMA_UNRECOGNIZED"));
 });
 test("synthetic: exact library name, visible-library fallback and duplicate-name rejection", async () => {
@@ -68,6 +68,18 @@ test("synthetic I-04: empty product search actually enters P1 and model director
 test("synthetic I-08: multipage directories deduplicate entries and preserve cursor", async () => {
   const adapter = new ImaAdapter(async (_m, args) => ok({ knowledge_list: [{ media_id: "m", title: "doc" }], is_end: args.cursor === "next", next_cursor: "next" }));
   assert.equal((await adapter.listEntries("kb")).length, 1);
+});
+test("synthetic: a confirmed product folder search hit is opened before article selection", async () => {
+  const calls: string[] = [];
+  const adapter = new ImaAdapter(async (method, args) => {
+    calls.push(method);
+    if (method === "search_knowledge") return page([{ folder_id: "f", name: "Exact Model" }]);
+    assert.equal(args.folder_id, "f");
+    return page([{ media_id: "a", title: "article.md", parent_folder_id: "f" }], "knowledge_list");
+  });
+  const result = await adapter.findProduct("kb", "Exact Model", []);
+  assert.equal(result.entries[0].title, "article.md");
+  assert.deepEqual(calls, ["search_knowledge", "get_knowledge_list"]);
 });
 test("synthetic I-08: repeated/missing cursor and traversal budget fail explicitly", async () => {
   await assert.rejects(new ImaAdapter(async () => ok({ info_list: [], is_end: false, next_cursor: "loop" })).pages("search_knowledge", {}, "info_list"), errorCode("PAGINATION_INVALID"));

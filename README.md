@@ -1,64 +1,58 @@
-# 华为 PC 营销智能体：Codex 协作开发包
+# 华为 PC 营销智能体
 
-研究日期：2026-10-18（北京时间）
-适用基线：华为·产业进阶赛道·赛题手册 v4。
+当前阶段：第一阶段基础工程已实现，**G1 真实接入仍为 BLOCKED**（本机未配置 ima 凭证）。契约版本 `0.1.0-provisional`，不能把 synthetic 测试或本地资料当作真实连库通过。实际进度、证据和接续步骤见 [docs/STATUS.md](docs/STATUS.md)。
 
-这是一套已经写好的开发指令、协作配置、架构和验收材料。参赛应用尚未开发；当前包没有真实账号接入、运行结果或已部署网站。研究已核对 OpenAI 官方文档，并静态审查了手册指定的 ima Skill 1.1.10。
+## 本机运行
 
-## 你怎样开始
+本次实测：macOS 27.0.1 arm64、Node 26.0.0、npm 11.12.1。依赖锁定 Next.js 16.4.2、React 19.3.1、TypeScript 5.9.3；运行时最低 Node 20.9（[Next.js 官方安装要求](https://nextjs.org/docs/app/getting-started/installation)）。推荐使用 `.nvmrc` 对齐本次环境。只维护 `package-lock.json`。
 
-1. 把本包解压到一个独立项目文件夹，例如 huawei-pc-agent。以包含本 README.md 和 AGENTS.md 的目录作为 Codex 项目根目录。
-2. 把赛题 PDF 放入 inputs/ 目录；若本地已在别处，直接把实际路径告诉 Codex。inputs/ 已在忽略规则中。
-3. 在你将实际使用的 Codex 本地客户端打开这个目录，启动第一轮对话，把下面一句完整发给它：
+```sh
+npm ci
+npm run dev -- --port 3210
+```
 
-    读取 AGENTS.md、README.md 和 prompts/01-foundation.md，并直接执行第一阶段。自主处理常规技术决策，先核实当前客户端的子智能体能力，再按文件中的分工工作。完成后以 docs/STATUS.md 为依据汇报真实结果和下一步。
+访问 [本机工作台](http://127.0.0.1:3210)。页面可输入完整产品型号、执行真实只读接入检查，并查看逐步结果。内容生成、改稿和导出属于下一阶段，当前没有成稿功能。
 
-如果放进已有仓库：请 Codex 先比较、合并现有规则与配置，保留现有代码、锁文件及用户设置；不要用本包覆盖整个项目或用户级 Codex 配置。
+```sh
+npm run typecheck
+npm test
+npm run build
+npm run start -- --port 3210
+```
 
-## 三个主对话
+生产服务启动后，另一终端运行 `npm run verify:http`。默认检查 `http://127.0.0.1:3210`；可用非敏感的 `APP_TEST_URL` 指定其他本机端口。健康接口为 `GET /api/health`；连接状态 `GET /api/connection`，同源只读探测 `POST /api/connection`（JSON：`{"productName":"完整型号名"}`）。图片仅通过当前报告关联的 `/api/assets/<项目图片标识>` 访问。
 
-| 次序 | 对话名 | 启动文件 | 结束条件 |
-| --- | --- | --- | --- |
-| 1 | 项目基础与真实接入 | prompts/01-foundation.md | 形成可运行项目基础；真实读取一份原文及一张可核对型号的图片；接口契约有证据，或精确列出阻塞 |
-| 2 | 完整闭环与并行开发 | prompts/02-build.md | 三平台完整流程、配图、核验、修改、导出跑通；模块已统一集成 |
-| 3 | 独立验收与参赛交付 | prompts/03-review.md | 从新上下文执行验收；修复实际问题；形成真实演示与提交材料 |
+本阶段是绑定回环地址的本机单用户应用。尚未实现公网身份认证、多用户权限、共享存储或云部署；当前的 Host/Origin 检查不能代替这些能力。不要把本机预览直接当作已完成的公开服务。
 
-三个主对话按顺序开启，不需要同时维护三个主控。一个阶段较长时继续该对话即可；中断后用 prompts/04-resume.md 恢复。只有遇到上下文混乱或阶段边界才开新主对话。
+## 配置 ima（密钥只在本机填写）
 
-每轮结束后，在同一项目目录新开下一轮，发“读取 AGENTS.md、docs/STATUS.md 和 prompts/02-build.md，执行第二阶段”，或替换成第三阶段文件。文件记录优先于聊天记忆。尚未验证的依赖不能在下一轮被自动当作已通过。
+1. 用同一 ima 账号加入手册指定的 **任德耀新建华为PC知识库**。本地 `华为PC全板块深度知识库_v7/` 不是本次 live 调用的替代来源。
+2. 在 [ima 官方凭证页面](https://ima.qq.com/agent-interface) 获取凭证，在项目被忽略的 `.env.local` 中自行填写 `IMA_OPENAPI_CLIENTID`、`IMA_OPENAPI_APIKEY`。不要粘贴到聊天、终端参数或 Git。此工作区已生成权限为 0600 的空模板；新机器可 `cp -n .env.example .env.local` 后 `chmod 600 .env.local`。
+3. 运行 `python3 scripts/setup_ima.py` 下载并校验手册指定的官方 1.1.10 完整 Skill 到忽略的 `vendor/ima-skill/`。脚本校验固定 SHA-256、展开体积、路径与符号链接；已有目录保留不覆盖。该命令不调用认证 API。本次官方包实际下载与哈希已核对；不表示已确认它是最新版本。
+4. 默认使用 `vendor/ima-skill/ima_api.cjs`；若使用另一个已审阅的官方完整目录，在 `.env.local` 的 `IMA_SKILL_PATH` 填其 `ima_api.cjs` 路径。不能只复制一个 CJS 文件，目录需要元数据和参考文档。
+5. 填写后运行以下命令。CLI 每次加载 `.env.local`；页面服务需重启才能读取新配置。
 
-## 协作方式
+```sh
+npm run verify:ima -- 'HUAWEI MateBook 14'
+```
 
-主控决定契约、任务、优先级和集成，最多同时开放三个子智能体。第一阶段以只读调查为主；第二阶段可以让 ima、工作流、界面三个实现者并行，各自使用独立 Git worktree。测试与评审在稳定代码版本上进行。
+上面的型号是探测请求，不表示已验证此型号存在。以指定库实际型号为准。退出码：`0=PASS`、`2=BLOCKED`、`1=FAIL/输入错误`。每次报告包括 `mode`、逐步 `executed/status`、账号身份未验证状态和安全来源视图。缺凭证时不发知识库请求，下游标为未执行。
 
-不用你手动向每个子智能体发消息。主控负责真实启动、等待、追问和关闭子线程。如果当前客户端不具备该工具，按相同任务边界顺序完成，并明确报告实际限制。
+已支持对 `IMA_CLIENT_ID/IMA_API_KEY` 旧别名进行完整性及冲突检测；有冲突时停止，不能混用。不会兜底翻读官方历史凭证文件。SDK 子进程只接收选定凭证对和必要环境，固定 `https://ima.qq.com`、阻止认证请求重定向、设置超时并隔离远端更新指令。
 
-## 文件怎么用
+当前 Adapter 只有四个只读 wiki 接口：库搜索、目录列表、资料搜索、媒体访问。笔记分支明确 BLOCKED，不调用笔记写入或扫描私人笔记。已知字段别名冲突、未知协议、无权限、频控、网络、更新、无原文、图片不足各有独立错误，不伪装成空列表。
 
-| 文件 | 作用 |
-| --- | --- |
-| AGENTS.md | 项目长期规则、来源约束、主控职责和协作边界 |
-| .codex/config.toml | 三个并发子线程的项目配置 |
-| .codex/agents/*.toml | 四种可复用角色：ima、工作流、界面、评审 |
-| docs/CODEX_SETUP.md | 当前官方启用办法、版本检查和兼容处理 |
-| docs/ARCHITECTURE.md | 应用架构、模块所有权和实现顺序 |
-| docs/SPEC.md | 赛题需求及首版范围 |
-| docs/CONTRACTS.md | 拟定的内部数据格式，真实样本确认后由主控冻结 |
-| docs/IMA_RESEARCH.md | ima 一手材料调查及接入陷阱 |
-| docs/ACCEPTANCE.md | 可实际执行的验收条件 |
-| docs/STATUS.md | 当前进度、证据、阻塞和下一步；只由主控更新 |
-| docs/DECISIONS.md | 已记录的项目决策和改变理由；只由主控更新 |
-| docs/TASK_BOARD.md | 工作分配、依赖、工作树和状态；只由主控更新 |
-| docs/SOURCES.md | 研究来源与验证范围 |
-| prompts/ | 三轮主对话、恢复和子任务的完整指令 |
+当前原文解析限 UTF-8 文本/Markdown；产品文章需为 `article.md`，一级标题与输入型号完全一致。图片只接受已核对文章中以完整型号作为 alt 的相对路径引用，且媒体为图片类型、实际内容可解码；不通过文件名猜型号。媒体主机仅允许经公网地址检查的 `qq.com/qpic.cn/myqcloud.com` 及子域；重定向不跟随。其它真实格式、目录别名或主机须先取样、审阅并补测试，不能直接扩宽权限来声称兼容。
 
-## 需要你亲自完成的最少事项
+## 数据、测试与交接
 
-在实际开发环境中选择项目目录，并在 ima 用同一账号加入指定知识库、配置接口凭证。缺少凭证时，Codex 应先完成不依赖真实服务的工作，再给出准确的本机配置步骤。密钥在本机输入，不要贴进聊天或公开仓库。
+- `.local-data/probes/<reportId>/`：私有报告、必要原文/图片、原始响应和字段结构；`.local-data/latest-probe.json` 为最新安全报告。默认目录被忽略。若自行改 `APP_DATA_DIR`，必须放在私有且不入库的位置。
+- `.local-evidence/foundation/`：构建、测试、HTTP 检查、浏览器截图；`.local-evidence/ima-research/` 与 `.local-evidence/reviewer/` 为本次真实子任务调查与评审证据。它们只在本机，不包含在公开源码包。
+- `tests/ima/`、`tests/contracts/`：全部明确标注 synthetic，不代表 live ima 或实际图片已通过。正式 live 的门槛仍是指定库、一份原文、一张型号有据可解码图片。
+- `src/contracts/index.ts` 是已实现的暂定 schema。外部协议映射仍未冻结；完整运行、事实冲突、修订失效和成稿导出将在第二阶段实现。
+- `inputs/`、现有完整知识库和设计参考均保留在本机并被忽略，不随源码公开。
+- 运行时模型变量 `LLM_BASE_URL/LLM_API_KEY/LLM_MODEL` 仅保留服务端配置位置，当前没有模型调用实现或验证。
 
-开发工具的模型配置与参赛应用运行时的模型服务分别检查；本包不替你选择不可用的模型，不写死模型名称，也不假定已存在可调用的模型服务。
+主控规则见 [AGENTS.md](AGENTS.md)。任务入口依次为 [第一阶段](prompts/01-foundation.md)、[第二阶段](prompts/02-build.md)、[第三阶段](prompts/03-review.md)。同一阶段一个主控、最多三个子智能体；并行编码前必须有真实基线及不同 worktree。本阶段两个子任务仅只读调查，只有主控写代码。
 
-## 本包的验证范围
-
-配置和角色按当前官方文档编写。已检查 24 份文件的完整性、5 份 TOML 的语法、相对文件引用、角色边界和三轮交接的一致性。当前工作环境没有 Codex 可执行文件，因此客户端实际加载、子线程创建、ima 认证和应用运行均留给第一轮本机检查。详情见 docs/STATUS.md。
-
+接续前先读 `docs/STATUS.md`、`docs/TASK_BOARD.md`、`docs/DECISIONS.md`。先解除 G1 阻塞、复核真实字段、冻结契约，再开始依赖该契约的并行完整实现；不得自动把本阶段基础工程记为完整营销流程。

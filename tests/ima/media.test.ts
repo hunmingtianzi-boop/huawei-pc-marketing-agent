@@ -14,6 +14,7 @@ test("synthetic: source content rejects HTML login, binary, invalid UTF-8 and un
   assert.throws(() => parseDocument(Buffer.from([0xff, 0xfe]), "text/plain"));
   assert.throws(() => parseDocument(Buffer.alloc(50), "application/pdf"));
   assert.ok(parseDocument(Buffer.from("# Synthetic Model\n" + "synthetic product text ".repeat(5)), "text/markdown").startsWith("# Synthetic"));
+  for (const mime of ["text/x-markdown", "application/md", "application/markdown"]) assert.ok(parseDocument(Buffer.from("# Synthetic Model\n" + "synthetic product text ".repeat(5)), mime).startsWith("# Synthetic"));
 });
 test("synthetic: local/private address ranges and mapped IPv6 rejected", () => {
   for (const ip of ["127.0.0.1", "10.0.0.1", "169.254.169.254", "172.16.0.1", "192.168.0.1", "100.64.0.1", "::1", "::ffff:127.0.0.1", "fc00::1"]) assert.equal(publicAddress(ip), false, ip);

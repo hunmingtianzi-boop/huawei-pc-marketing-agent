@@ -20,8 +20,8 @@ export function envelope(raw: unknown) {
   const r = record(raw);
   if (r.code === -200) throw new ImaError("SKILL_UPDATE_REQUIRED", true);
   if (r.code === 110030) throw new ImaError("PERMISSION_DENIED", true);
-  if (r.code === 429) throw new ImaError("RATE_LIMITED", true);
-  if (r.code === -100) throw new ImaError("NETWORK_ERROR", true);
+  if (r.code === 429 || r.code === 110021) throw new ImaError("RATE_LIMITED", true);
+  if (r.code === -100 || r.code === 110010) throw new ImaError("NETWORK_ERROR", true);
   if (typeof r.code !== "number") throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
   if (r.code !== 0) throw new ImaError("PROVIDER_ERROR", true);
   return record(r.data);
@@ -80,7 +80,12 @@ export class ImaAdapter {
   }
   async findProduct(kb: string, name: string, rootEntries: Entry[]) {
     const hits = await this.searchEntries(kb, name);
-    if (hits.length) return { entries: hits, usedDirectoryFallback: false };
+    if (hits.length) {
+      const folders = hits.filter(e => e.kind === "folder" && e.title === name);
+      if (folders.length > 1) throw new ImaError("MODEL_AMBIGUOUS", true);
+      if (folders.length === 1) return { entries: await this.listEntries(kb, folders[0].mediaId), usedDirectoryFallback: false };
+      return { entries: hits.filter(e => e.kind !== "folder"), usedDirectoryFallback: false };
+    }
     // Scope traversal to P1 only; no unrelated library content is read.
     const p1 = rootEntries.filter(e => e.title === "P1-产品参数库");
     if (p1.length !== 1) throw new ImaError("MODEL_AMBIGUOUS", true);
