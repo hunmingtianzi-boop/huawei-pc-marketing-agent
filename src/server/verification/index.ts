@@ -42,7 +42,7 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
       for (const qualifier of fact.qualifiers) if (!normalized(block.text).includes(normalized(qualifier))) add("FACT_QUALIFIER_MISSING", "fact", block.blockKey, `事实引用需要保留限制条件：${qualifier}`, fact.sourceIds);
     }
     if (!block.factIds.length && block.text.split(/[。！？\n，,；;]/).some(clause => {
-      const predicate = /支持(?!情况|条件|边界|需求)|搭载|采用|配备|拥有|具备|兼容(?!性|条件|边界|需求|情况)|兼容性(?:好|优秀|很好|强|高)|轻至|薄至|重约|高达|长达|(?:分辨率|处理器|续航|重量|屏幕|接口).{0,8}(?:为|是|约|达|很|更|轻|清晰|OLED|：|\d)/.test(clause);
+      const predicate = /支持(?!(?:情况|条件|边界|需求)(?:[\s、]|$|及|以及|和|与|等))|搭载|采用|配备|拥有|具备|兼容(?!性?(?:条件|边界|需求|情况)?(?:[\s、]|$|及|以及|和|与|等))|轻至|薄至|重约|高达|长达|(?:分辨率|处理器|续航|重量|屏幕|接口).{0,8}(?:为|是|约|达|很|更|轻|清晰|OLED|：|\d)/.test(clause);
       const explicitQuestion = /是否|能否|哪些|何种|什么|哪种/.test(clause);
       const explicitStep = /^\s*(?:请|先|建议|可以|选购前|购买前|出差前){0,3}\s*(?:核对|确认|咨询|整理|核查)/.test(clause);
       const requirement = /(?:需|需要).{0,8}(?:特定|何种|哪些|什么)|对.{0,15}(?:需求|要求)/.test(clause);
