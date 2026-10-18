@@ -1,58 +1,73 @@
 # 华为 PC 营销智能体
 
-当前阶段：**第一阶段完成，G1 真实接入 PASS**。已从指定 ima 库读取 HUAWEI MateBook 14（鸿蒙版）原文和一张型号可证的 817×892 PNG，并冻结接入契约 `1.0.0`。synthetic 测试与真实接入证据分别记录。实际进度、证据和接续步骤见 [docs/STATUS.md](docs/STATUS.md)。
+本机三平台图文工作台：必要澄清 → 场景策略 → 指定 ima 产品事实与型号图片 → 实际模型生成 → 规则及独立语义核验 → 编辑重验 → 服务端导出。目标平台为朋友圈（1–3图）、公众号（2–4图）、小红书（3–6图）。当前验收结论、实际结果与阻塞以 [STATUS](docs/STATUS.md) 和 [验收记录](docs/evidence/stage2-2026-10-18.json) 为准；synthetic 不计真实成稿。
 
-## 本机运行
+## 启动
 
-本次实测：macOS 27.0.1 arm64、Node 26.0.0、npm 11.12.1。依赖锁定 Next.js 16.4.2、React 19.3.1、TypeScript 5.9.3；运行时最低 Node 20.9（[Next.js 官方安装要求](https://nextjs.org/docs/app/getting-started/installation)）。推荐使用 `.nvmrc` 对齐本次环境。只维护 `package-lock.json`。
+本次环境 macOS arm64、Node 26.0.0、npm 11.12.1；最低 Node 20.9，建议使用 `.nvmrc`。沿用 Next.js 16.4.2 / React 19.3.1 / TypeScript 5.9.3，只维护 `package-lock.json`。
 
 ```sh
 npm ci
+cp -n .env.example .env.local
+chmod 600 .env.local
+# 在编辑器中填写本机配置，已有 .env.local 不覆盖
 npm run dev -- --port 3210
 ```
 
-访问 [本机工作台](http://127.0.0.1:3210)。页面可输入完整产品型号、执行真实只读接入检查，并查看逐步结果。内容生成、改稿和导出属于下一阶段，当前没有成稿功能。
+生产预览：`npm run build`，再 `npm start -- --port 3210`。访问 [工作台](http://127.0.0.1:3210/)。应用仅绑定回环地址，适用于一个 Node 进程的本机单用户；没有公网登录、多用户权限或多实例写入锁。导出是本机文本文件，不表示已发布。
+
+## 服务端配置
+
+ima：用生成凭证的同一账号加入 **任德耀新建华为PC知识库**，在 `.env.local` 填 `IMA_OPENAPI_CLIENTID`、`IMA_OPENAPI_APIKEY`。保留已部署的官方 Skill；新机器运行 `python3 scripts/setup_ima.py` 下载并校验指定1.1.10完整包，默认 `vendor/ima-skill/ima_api.cjs`。支持 `IMA_SKILL_PATH` 指向另一个已审查完整目录。使用者自填 `IMA_ACCOUNT_LABEL` 不等于接口验证昵称。
+
+模型：一个支持 Chat Completions JSON 的服务即可，三项均只在服务端读取：
+
+```dotenv
+LLM_BASE_URL=https://api.openai-next.com/v1
+LLM_MODEL=gpt-4.1
+LLM_API_KEY=在本机填写你的服务密钥
+```
+
+这是本次用户已有服务的实际配置方案；模型名代表提供方路由标识，未独立认证底层实现。可以更换自有兼容服务，不需新增 SDK。`LLM_BASE_URL` 可为服务根、`/v1`，或末尾完整 `/chat/completions`（会规范化）；普通远端必须HTTPS。配置修改后重启页面服务；CLI每次加载本机 `.env.local`。
 
 ```sh
-npm run typecheck
+npm run verify:model
+npm run verify:business-evidence
+```
+
+第一条命令只发送最小JSON请求；第二条会消耗实际ima只读额度，取得事实与最多6张候选图。密钥不要写到终端参数、聊天、Git、录屏或worker目录。无配置/权限、限流、模型超时/错误格式都明确失败，没有人工样稿回退。本次ima实际返回220021当日资料次数上限时，应用明确提示次日重试。
+
+## 任务与修改
+
+输入具体型号、人群、场景、平台与目标。信息不足时只补充必要字段。产品事实只从指定ima库读取；目录回退、分页和媒体headers访问保留第一阶段实测映射。当前原文支持UTF-8 Markdown/text；型号图片根据同目录CSV精确型号、文件名、尺寸与实际解码确定，不下载索引中的外部URL，不用重复图片凑数量。
+
+正文引用、数值/条件、全部可见文案、图片及平台数量由代码检查，语义核验另发模型请求。资料冲突、无依据价格/体验、图片不足或模型失败会关闭完整成稿导出。来源面板显示必要摘录和可理解定位，原文/访问头/签名URL不下发。
+
+任何稿件或任务修改都会撤销旧核验。保存后重新核验，换平台/场景需重新规划和生成；换型号清空证据。`重新取证并执行`始终请求ima；`使用当前取证重新生成`允许复用同任务同型号24小时内的有效快照，逐图重新核对字节摘要，进度明确展示原取证时间及本次未再次访问ima。冲突/无事实/过期快照不复用；损坏图片直接阻断，不静默联网兜底。平台和场景变化后的新稿仍须独立核验，不能继承旧通过状态。
+
+复制/下载均调用服务端导出接口，复核当前版本、内容/证据/策略/任务绑定及图片文件。导出包含标题、正文、CTA、图片说明/用途/来源/插入位置和引用依据；图片原件不随Markdown打包，海报导出尚未实现。
+
+## 验证与私有证据
+
+```sh
 npm test
+npm run typecheck
 npm run build
-npm run start -- --port 3210
 ```
 
-生产服务启动后，另一终端运行 `npm run verify:http`；要求本次 live 门槛通过时运行 `APP_REQUIRE_LIVE=true npm run verify:http`（会执行一次真实只读检查）。默认检查 `http://127.0.0.1:3210`；可用非敏感的 `APP_TEST_URL` 指定其他本机端口。健康接口为 `GET /api/health`；连接状态 `GET /api/connection`，同源只读探测 `POST /api/connection`（JSON：`{"productName":"完整型号名"}`）。图片仅通过当前报告关联的 `/api/assets/<项目图片标识>` 访问。
-
-本阶段是绑定回环地址的本机单用户应用。尚未实现公网身份认证、多用户权限、共享存储或云部署；当前的 Host/Origin 检查不能代替这些能力。不要把本机预览直接当作已完成的公开服务。
-
-## 配置 ima（密钥只在本机填写）
-
-1. 用同一 ima 账号加入手册指定的 **任德耀新建华为PC知识库**。本地 `华为PC全板块深度知识库_v7/` 不是本次 live 调用的替代来源。
-2. 在 [ima 官方凭证页面](https://ima.qq.com/agent-interface) 获取凭证，在项目被忽略的 `.env.local` 中自行填写 `IMA_OPENAPI_CLIENTID`、`IMA_OPENAPI_APIKEY`。不要粘贴到聊天、终端参数或 Git。本次工作区已生成权限为 0600 的私有配置；新机器可 `cp -n .env.example .env.local` 后 `chmod 600 .env.local`。
-3. 运行 `python3 scripts/setup_ima.py` 下载并校验手册指定的官方 1.1.10 完整 Skill 到忽略的 `vendor/ima-skill/`。脚本校验固定 SHA-256、展开体积、路径与符号链接；已有目录保留不覆盖。该命令不调用认证 API。本次官方包实际下载与哈希已核对；不表示已确认它是最新版本。
-4. 默认使用 `vendor/ima-skill/ima_api.cjs`；若使用另一个已审阅的官方完整目录，在 `.env.local` 的 `IMA_SKILL_PATH` 填其 `ima_api.cjs` 路径。不能只复制一个 CJS 文件，目录需要元数据和参考文档。
-5. 填写后运行以下命令。CLI 每次加载 `.env.local`；页面服务需重启才能读取新配置。
+隔离的synthetic HTTP验收（终端一）：
 
 ```sh
-npm run verify:ima -- 'HUAWEI MateBook 14'
+APP_ENABLE_SYNTHETIC=true APP_DATA_DIR=.local-data/stage2-acceptance npm start -- --port 3211
 ```
 
-上面的型号是探测请求，不表示已验证此型号存在。以指定库实际型号为准。退出码：`0=PASS`、`2=BLOCKED`、`1=FAIL/输入错误`。每次报告包括 `mode`、逐步 `executed/status`、账号身份未验证状态和安全来源视图。缺凭证时不发知识库请求，下游标为未执行。
+终端二：`npm run verify:business-http`。这会验证三平台本机接口、标题/图注修订失效、直接导出拒绝、受控图片及重验导出，明确不计G3。正常3210服务默认拒绝创建synthetic任务。`APP_TEST_URL`可指定另一回环端口。
 
-已支持对 `IMA_CLIENT_ID/IMA_API_KEY` 旧别名进行完整性及冲突检测；有冲突时停止，不能混用。不会兜底翻读官方历史凭证文件。SDK 子进程只接收选定凭证对和必要环境，固定 `https://ima.qq.com`、阻止认证请求重定向、设置超时并隔离远端更新指令。
+真实完整取证任务可用 `APP_TEST_MODE=live APP_TEST_URL=http://127.0.0.1:3210 npm run verify:business-http`，会消耗ima和模型调用。已有同任务真实快照的连续改稿/平台场景对照：`APP_LIVE_RUN_ID=已有任务UUID npm run verify:live-controls`；脚本保留原取证时间并标注复用，不伪装新的连库调用。不要在额度耗尽时重复运行真实取证。
 
-当前 Adapter 只有四个只读 wiki 接口：库搜索、目录列表、资料搜索、媒体访问。笔记分支明确 BLOCKED，不调用笔记写入或扫描私人笔记。已知字段别名冲突、未知协议、无权限、频控、网络、更新、无原文、图片不足各有独立错误，不伪装成空列表。
+- `.local-data/runs/<runId>/`：私有运行、图片字节、原文/响应及每操作模型诊断；`.local-data/stage2-results/`：真实版本成稿与运行快照。文件0600、目录0700，Git忽略。
+- `.local-evidence/stage2/`：测试、类型/构建、HTTP、live对照、安全扫描、浏览器与reviewer证据；本机文件，公开仅保留必要安全汇总。
+- 接入契约1.0.0保留，新增业务契约2.0.0见 [BUSINESS_API](docs/BUSINESS_API.md) 与 `src/contracts/business.ts`；模型只收必要支持事实和安全图片说明。
+- `inputs/`、原始知识库、本机配置、vendor、worktree不随源码公开。`scripts/verify_safety.ts`可在已配置且启动3210后检查受版本控制文件、浏览器JS和安全DTO无当前凭证值。
 
-当前原文解析限 UTF-8 文本/Markdown；已验证当前 P1 目录的 `产品事实.md`（另支持手册的 `article.md`），从一级标题读取明确型号与鸿蒙版限定。图片支持型号明确的原文相对引用，或同型号目录内 `图片索引.csv` 的精确型号/文件名对应关系；图片仍必须通过 ima 媒体接口单独读取、解码，索引尺寸需与实际图片一致。索引中的外部图片 URL 不用于下载，不通过文件名猜型号。媒体主机仅允许经公网地址检查的 `qq.com/qpic.cn/myqcloud.com` 及子域；重定向不跟随。其它真实格式、目录别名或主机须先取样、审阅并补测试，不能直接扩宽权限来声称兼容。
-
-## 数据、测试与交接
-
-- `.local-data/probes/<reportId>/`：私有报告、必要原文/图片、原始响应和字段结构；`.local-data/latest-probe.json` 为最新安全报告。默认目录被忽略。若自行改 `APP_DATA_DIR`，必须放在私有且不入库的位置。
-- `.local-evidence/foundation/`：构建、测试、HTTP 检查、浏览器截图；`.local-evidence/ima-research/` 与 `.local-evidence/reviewer/` 为本次真实子任务调查与评审证据。它们只在本机，不包含在公开源码包。
-- `tests/ima/`、`tests/contracts/`：全部明确标注 synthetic，不代表 live ima 或实际图片已通过。正式 live 的门槛仍是指定库、一份原文、一张型号有据可解码图片。
-- `src/contracts/index.ts` 的接入/安全视图及基础领域 schema 已冻结为 `1.0.0`。实际 provider 映射和边界见 `docs/CONTRACTS.md` 的首轮实测节；完整运行、事实冲突、修订失效和成稿导出将在第二阶段实现。
-- `inputs/`、现有完整知识库和设计参考均保留在本机并被忽略，不随源码公开。
-- 运行时模型变量 `LLM_BASE_URL/LLM_API_KEY/LLM_MODEL` 仅保留服务端配置位置，当前没有模型调用实现或验证。
-
-主控规则见 [AGENTS.md](AGENTS.md)。任务入口依次为 [第一阶段](prompts/01-foundation.md)、[第二阶段](prompts/02-build.md)、[第三阶段](prompts/03-review.md)。同一阶段一个主控、最多三个子智能体；并行编码前必须有真实基线及不同 worktree。本阶段两个子任务仅只读调查，只有主控写代码。
-
-接续前先读 `docs/STATUS.md`、`docs/TASK_BOARD.md`、`docs/DECISIONS.md`。第一阶段 G1 已通过。第二阶段先读取冻结范围并补齐其运行/修订/导出端点的代码 schema，再由主控创建独立 worktree 分发实现；不得自动把本阶段基础工程记为完整营销流程。
+接续先读 [AGENTS](AGENTS.md)、[STATUS](docs/STATUS.md)、[TASK_BOARD](docs/TASK_BOARD.md)、[DECISIONS](docs/DECISIONS.md)。本阶段主控先冻结契约，三个真实worker在独立worktree实现后逐个集成；只读review不代替 [第三阶段](prompts/03-review.md) 新上下文G4。尚未推送、公开部署或提交赛事材料。

@@ -1,0 +1,293 @@
+{
+  "phase": "build",
+  "checkedAt": "2026-10-18T07:42:18.703Z",
+  "branch": "codex/stage2",
+  "applicationCodeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+  "foundation": {
+    "verifiedCode": "554ddba873fb606a9bacd1169ff45d0312b4ba6d",
+    "resumedHead": "9bbb976",
+    "workingTreeAtStart": "clean",
+    "contract": "1.0.0",
+    "gate": "PASS",
+    "evidence": "docs/evidence/foundation-2026-10-18.json"
+  },
+  "businessContract": "2.0.0",
+  "sharedBaseline": "6d01f360c92e103f3781578d5a16ff8344b5d715",
+  "gates": {
+    "G2": "PASS",
+    "G3": "BLOCKED",
+    "G4": "NOT_RUN"
+  },
+  "checks": {
+    "syntheticTests": {
+      "passed": 118,
+      "failed": 0
+    },
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "syntheticThreePlatformHTTP": "PASS",
+    "controlledRealCachedAssets": {
+      "status": "PASS",
+      "count": 4
+    },
+    "browser": {
+      "syntheticEditRevalidateExport": "PASS",
+      "realPreviewSourceAndExport": "PASS"
+    },
+    "review": {
+      "status": "PASS",
+      "commit": "7f837b9",
+      "doesNotReplaceG4": true
+    },
+    "model": {
+      "configured": true,
+      "minimalActualRequest": "PASS",
+      "model": "gpt-4.1",
+      "baseUrl": "https://api.openai-next.com/v1",
+      "underlyingImplementationIndependentlyAuthenticated": false
+    }
+  },
+  "contrasts": {
+    "scenarioPriorityChanged": true,
+    "scenarioReferencedFieldsChanged": true,
+    "scenarioImagePurposesChanged": true,
+    "platformCTAsDistinct": true
+  },
+  "cases": [
+    {
+      "caseId": "G3-v53",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:34:57.222Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 53,
+      "platform": "wechat_moments",
+      "scenario": "新生开学",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 1,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "操作系统"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v53.md"
+    },
+    {
+      "caseId": "G3-v54",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:34:59.628Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 54,
+      "platform": "wechat_moments",
+      "scenario": "新生开学",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 1,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "操作系统"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v54.md"
+    },
+    {
+      "caseId": "G3-v56",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:35:09.484Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 56,
+      "platform": "xiaohongshu",
+      "scenario": "新生开学",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 3,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "操作系统",
+        "屏幕",
+        "包装清单"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v56.md"
+    },
+    {
+      "caseId": "G3-v64",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:36:12.158Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 64,
+      "platform": "xiaohongshu",
+      "scenario": "出差办公",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 3,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "尺寸与重量",
+        "包装清单",
+        "操作系统"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v64.md"
+    },
+    {
+      "caseId": "G3-v60",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:35:30.567Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 60,
+      "platform": "wechat_article",
+      "scenario": "出差办公",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 2,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "尺寸与重量",
+        "包装清单",
+        "操作系统"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v60.md"
+    },
+    {
+      "caseId": "G3-v62",
+      "codeCommit": "cdbc88387ce76c634c137f3341e69b2ad0ef4854",
+      "at": "2026-10-18T07:35:35.565Z",
+      "runId": "81bf2d7a-97ac-444f-adc6-c56bf5f96d03",
+      "version": 62,
+      "platform": "wechat_moments",
+      "scenario": "出差办公",
+      "status": "PASS",
+      "retrieval": "current-task-live-snapshot-reuse",
+      "sourceRetrievedAt": "2026-10-18T07:06:00.392Z",
+      "freshImaReadInOperation": false,
+      "actualModelGeneration": true,
+      "actualIndependentSemantic": true,
+      "images": 1,
+      "model": "gpt-4.1",
+      "referencedFields": [
+        "尺寸与重量"
+      ],
+      "artifact": ".local-data/stage2-results/81bf2d7a-97ac-444f-adc6-c56bf5f96d03-v62.md"
+    }
+  ],
+  "latestMainBatch": {
+    "status": "FAIL",
+    "passed": 5,
+    "blocked": 1,
+    "blockedVersion": 58,
+    "reason": "SOURCE_MISSING",
+    "resolution": "targeted regeneration v64 passed; original failure retained"
+  },
+  "blockers": [
+    {
+      "caseId": "B-06",
+      "status": "BLOCKED",
+      "reason": "ima actual code220021 daily media retrieval quota exhausted; another product not requested after known limit",
+      "next": "after quota restores, fresh retrieval and end-to-end test another precise product"
+    },
+    {
+      "caseId": "fresh-live-recheck",
+      "status": "BLOCKED",
+      "reason": "same daily quota; case outputs reuse this-stage actual snapshot, not six fresh ima reads"
+    }
+  ],
+  "notVerified": [
+    "G4 independent new-context acceptance",
+    "continuous real demo recording",
+    "public deployment authentication and multi-user/multi-process storage",
+    "all other product formats and models",
+    "poster output and bundled image export",
+    "provider account nickname and underlying model identity"
+  ],
+  "proofs": [
+    {
+      "path": ".local-evidence/stage2/integrated-tests.log",
+      "sha256": "4b173140ab7b35386b6f550f8a3a3072b45f1d3069e46455ee15baa46067bd28"
+    },
+    {
+      "path": ".local-evidence/stage2/typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".local-evidence/stage2/build.log",
+      "sha256": "0d532b3c29fdd31cee813827ede96c7b680a0af3e43f32ed18695161b1f4479c"
+    },
+    {
+      "path": ".local-evidence/stage2/http-synthetic.json",
+      "sha256": "a0bd75ca5fac41c99e638818a100c1972545f337264dadb9fea900a8af7b3c44"
+    },
+    {
+      "path": ".local-evidence/stage2/multi-image.json",
+      "sha256": "e14c3a3d447691b6960bc39884be1b25d6d2ab02d3725b0cb07b060985619f8a"
+    },
+    {
+      "path": ".local-evidence/stage2/model-probe.json",
+      "sha256": "fa0be6e091dd6b08b7a480b1efbfe646149f0a83b0cc4d9b89723cbfaf85f7bc"
+    },
+    {
+      "path": ".local-evidence/stage2/live-controls.json",
+      "sha256": "e5132a0a95d8d2e3098f66ba40268cb4a755b9e7abaf6bffe5bbea883e37d948"
+    },
+    {
+      "path": ".local-evidence/stage2/live-case-xiaohongshu.json",
+      "sha256": "b86f8540d6a1972e1f90c4f50803aa3d40c38d4d054a843f86296e6524f1c8b3"
+    },
+    {
+      "path": ".local-evidence/stage2/live-case-wechat_article.json",
+      "sha256": "287928ef0e146b4388914ff94d215183fa3db0939cc4e400e4494b955f0db9c3"
+    },
+    {
+      "path": ".local-evidence/stage2/live-final-revalidate.json",
+      "sha256": "25e786a8e8e0a0e4a9fed09e2c3cbaf6acd5f34b3c48fb6f7b456f16f3ce0d5b"
+    },
+    {
+      "path": ".local-evidence/stage2/live-assets.json",
+      "sha256": "4cd009ea21014004ef10810dd8a040b6d2f6a914d46c6c5647b19c141e2301cb"
+    },
+    {
+      "path": ".local-evidence/stage2/safety.json",
+      "sha256": "78361b63ad1d79ec5d9f7e19571319a396364015425f610973896dcc36f2e318"
+    },
+    {
+      "path": ".local-evidence/stage2/browser-live-preview.png",
+      "sha256": "6e9e498cc3f132d601aac93e98c21fded2f9de7ba5e887c3cb4f3e1c6ea0036d"
+    },
+    {
+      "path": ".local-evidence/stage2/browser-live-export.png",
+      "sha256": "5512a9fa551035df7748acb0bfd694d985f4d822ecc6da559e022b2cbcad8522"
+    },
+    {
+      "path": ".local-evidence/stage2/browser-live-source.png",
+      "sha256": "5e57856b9f6e9214929b8ff99c034ab0e997ba30f112061996db75c7a523ed55"
+    },
+    {
+      "path": ".local-evidence/stage2/browser-synthetic-export.png",
+      "sha256": "c9add6724bca9207598ea201b7e1393260aa28b0b783aff0eee19a3c32ee5b29"
+    },
+    {
+      "path": ".local-evidence/stage2/browser.json",
+      "sha256": "956c57e7b658d8ea0178e0fe22578fd35c9dde3400be0dc64b9845b47c66ebb6"
+    },
+    {
+      "path": ".local-evidence/stage2/reviewer/S2-REVIEW-7f837b9.md",
+      "sha256": "f5f7faeaa386ee99edf30fa499dbeae2ed605f1d7d8275dd5e01b5a47c193a66"
+    }
+  ]
+}

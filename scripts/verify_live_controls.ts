@@ -4,6 +4,8 @@ import {execFileSync} from 'node:child_process';
 import {RunResponse,type RunResult,ExportResponse} from '../src/contracts/business';
 const base=process.env.APP_TEST_URL||'http://127.0.0.1:3210';
 const id=process.env.APP_LIVE_RUN_ID;
+const target=process.env.APP_LIVE_PLATFORM;
+const reportFile=target?`live-case-${target}.json`:'live-controls.json';
 const observations:unknown[]=[];
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 async function read(){const r=await fetch(`${base}/api/runs/${id}`);assert.equal(r.status,200);return RunResponse.parse(await r.json()).run;}
@@ -14,8 +16,9 @@ async function archive(run:RunResult,label:string){
  await report();await mkdir('.local-data/stage2-results',{recursive:true,mode:0o700});await writeFile(`.local-data/stage2-results/${id}-v${run.currentVersion}.json`,JSON.stringify(run),{mode:0o600});if(!run.exportable)return false;const r=await post('/export',{expectedVersion:run.currentVersion,format:'markdown'});assert.equal(r.status,200);const output=ExportResponse.parse(await r.json());assert.equal(output.provenanceMode,'live');assert.ok(!/https?:\/\//.test(output.content));
  await mkdir('.local-data/stage2-results',{recursive:true,mode:0o700});await writeFile(`.local-data/stage2-results/${id}-v${run.currentVersion}.md`,output.content,{mode:0o600});await writeFile(`.local-data/stage2-results/${id}-v${run.currentVersion}.json`,JSON.stringify(run),{mode:0o600});return true;
 }
-async function report(){await mkdir('.local-evidence/stage2',{recursive:true});await writeFile('.local-evidence/stage2/live-controls.json',JSON.stringify({at:new Date().toISOString(),commit,mode:'live-model-with-current-task-live-snapshot',observations},null,2));}
+async function report(){await mkdir('.local-evidence/stage2',{recursive:true});await writeFile('.local-evidence/stage2/'+reportFile,JSON.stringify({at:new Date().toISOString(),commit,mode:'live-model-with-current-task-live-snapshot',observations},null,2));}
 async function main(){assert.ok(id,'APP_LIVE_RUN_ID must identify a real run with existing live evidence');let run=await read();assert.equal(run.mode,'live');assert.equal(run.evidence?.provenanceMode,'live');assert.equal(run.evidence?.product.displayName,'HUAWEI MateBook 14（鸿蒙版）');
+ if(target){assert.ok(['wechat_article','wechat_moments','xiaohongshu'].includes(target));run=await act(run,'revise',{input:{...run.input,platform:target}});run=await act(run,'regenerate');const passed=await archive(run,'targeted platform regression -> '+target);console.log(JSON.stringify({status:passed?'PASS':'FAIL',reportFile}));if(!passed)process.exitCode=1;return;}
  if(run.input.platform!=='wechat_moments'||run.input.useScenario!=='新生开学')run=await act(run,'revise',{input:{...run.input,platform:'wechat_moments',useScenario:'新生开学',targetAudience:'新生'}});run=await act(run,'regenerate');assert.equal(await archive(run,'first real moments generation verification export'),true);
  const {version,contentDigest,...draft}=run.draft!;draft.title+=' · 资料整理';draft.selectedImages[0].caption+=' 产品资料';const stale=await act(run,'revise',{draft});assert.equal(stale.exportable,false);assert.equal(stale.validation?.status,'stale');assert.equal((await post('/export',{expectedVersion:stale.currentVersion})).status,409);run=await act(stale,'revalidate');assert.equal(await archive(run,'title caption revision invalidation revalidation export'),true);
  for(const [platform,scenario,audience,label] of [

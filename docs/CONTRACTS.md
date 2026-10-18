@@ -281,3 +281,7 @@
 | 成功原件访问需要 URL+headers | 请求只来自服务端真实访问方式；限制公网媒体域名、协议、体积、MIME和重定向，不附加 ima 主凭证 |
 
 样本来源、时间、安全结果及证据路径统一见 `docs/evidence/foundation-2026-10-18.json` 和 `docs/STATUS.md`。完整原文、图片索引、图片及真实 raw 仅留忽略的私有目录。本次通过不证明所有型号、笔记、内嵌图分支或未来协议均已验证。
+
+## 11. 第二阶段增量（2026-10-18）
+
+新增业务2.0.0与接入1.0.0并存，不改ProbeReport边界。实际业务schema、公共函数签名与端点见src/contracts/business.ts及docs/BUSINESS_API.md；canonical摘要见digests.ts。运行快照只包含安全视图，SourceDocument/媒体bytes与访问引用均为私有服务端结构。规则核验和独立语义核验绑定当前任务版本、稿摘要、证据ID/摘要、策略ID/摘要。220021当日额度映射既有RATE_LIMITED，使用固定次日提示，未知错误仍不冒充空资料。

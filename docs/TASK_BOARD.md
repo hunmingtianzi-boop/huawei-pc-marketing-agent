@@ -1,58 +1,34 @@
 # 主控任务板
 
-更新时间：2026-10-18。状态 TODO / DOING / BLOCKED / DONE；DONE 对应实际证据和提交。
+第二阶段唯一主控 `/root`，分支 `codex/stage2`。接续基线 `9bbb976`，第一阶段验证源码 `554ddba873fb606a9bacd1169ff45d0312b4ba6d`，G1 PASS。接入1.0.0不变，新增业务2.0.0；先提交统一基线 `6d01f360c92e103f3781578d5a16ff8344b5d715`，再派工。
 
-当前分支 `codex/foundation`，已验证代码基线 `554ddba873fb606a9bacd1169ff45d0312b4ba6d`；接入契约 `1.0.0`。
+| ID | 任务 | 状态 | 实际证据 |
+| --- | --- | --- | --- |
+| F01–F08 | 第一阶段接入、字段映射与独立复核 | DONE | docs/evidence/foundation-2026-10-18.json；原G1证据沿用 |
+| B00 | 业务输入/证据/运行/修订/核验/导出契约与API骨架 | DONE | 6d01f36，src/contracts/business.ts，BUSINESS_API.md |
+| B01 | ima多图/原文事实/冲突与分页、回退、错误 | DONE | db0d0f0/a241ebf已集成；本次live13事实、4张不同摘要图片；220021限额实测映射 |
+| B02 | 澄清/场景策略/服务端实际模型/生成/独立核验 | DONE | c0eb4b1已集成；后续主控定向修复；实际gpt-4.1请求成功 |
+| B03 | 三平台界面、依据、图文编辑、重验/服务端导出交互 | DONE | 3717402已集成；UI synthetic/SSR、浏览器人工样例完整闭环与真实界面 |
+| B04 | 运行持久化、CAS、资产缓存、导出门槛与集成 | DONE | 7a70bf9后主控实现；最终118项测试/类型/构建、HTTP与安全证据见STATUS |
+| B05 | G3正式真实结果与必要对照 | BLOCKED | 同任务真实资料快照+实际模型对照继续取得结果；ima220021当日额度阻塞另一型号/新取证；逐平台结果见STATUS |
+| B06 | 阶段二只读review与修复复验 | DONE | 多轮实际P2已修复；安全报告在.local-evidence/stage2/reviewer/，不代替G4 |
+| R01 | 第三阶段新上下文G4独立验收 | TODO | 按prompts/03-review.md与ACCEPTANCE重新检查 |
+| R02 | 恢复额度后补另一型号/必要fresh live验收 | BLOCKED | 用户服务额度次日恢复或提供实际可用权限额度；不能用缓存证明新取证 |
+| R03 | 正式流程视频、说明书、链接与赛事交付 | TODO | 尚未录制连续真实视频；无远端/未公开部署或提交 |
 
-| ID | 任务 | 负责人 | 状态 | 证据/依赖 |
+## 实际并行任务
+
+客户端真实协作工具已核实支持spawn/followup/message/list及结果回传，无自定义角色参数；每份委派按DELEGATION模板携带对应TOML的全部约束，不派生下级。实现期最多3个并发worker，且不同checkout；主控维护共享契约/API/运行/资产/依赖。秘密、原文、原始响应均未复制到worktree，worker仅synthetic；live由主控集中执行。
+
+全部基础提交为 `6d01f360c92e103f3781578d5a16ff8344b5d715`，契约 `2.0.0 + 1.0.0`：
+
+| 实际智能体 | worktree绝对路径 / branch | 可写范围 | worker提交 → 主控集成 | 实际状态 |
 | --- | --- | --- | --- | --- |
-| F01 | 项目、环境、客户端及真实子智能体核查 | 主控 | DONE | environment.json、五份 TOML；真实 spawn/list/message/result；3bb59cf / STATUS |
-| F02 | ima 官方材料与赛题独立只读调查 | ima_engineer / reviewer | DONE | static-report.json、F02-REVIEW.md；真实返回，未改源码 |
-| F03 | 可启动基础、统一依赖/配置与有价值测试 | 主控 | DONE | 9099b03、5d2f8be、554ddba；30 测试/类型/构建通过 |
-| F04 | 指定库、原文、型号图片最小 live 接入 | 主控 | DONE | 最新报告 b35c79cc-d20f-4f3d-ac89-bb0a4706c9ee，live/PASS，CLI/HTTP/浏览器证据 |
-| F05 | 按实测冻结接入契约与建立基础提交 | 主控 | DONE | 554ddba，CONTRACTS 第10节、src/contracts v1.0.0 |
-| F06 | 独立代码复核、修复与最终交接 | 主控 / reviewer | DONE | 三项P2已修，F07/F08 PASS；STATUS 与安全 evidence JSON |
-| B00 | 补齐业务运行/修订/导出 schema 与端点、冻结增量基线 | 主控 | TODO | 阶段二先执行，再派依赖它的写入者；当前只有接入相关端点 |
-| B01 | ima 取证包、更多型号/图片与分页容错 | ima_engineer | TODO | B00 + 主控实际创建独立 worktree |
-| B02 | 策略、模型、生成、核验、修订 | workflow_engineer | TODO | B00 + 配置实际模型服务 + 独立 worktree |
-| B03 | 三平台完整任务/结果/改稿/导出界面 | ui_engineer | TODO | B00 + 独立 worktree |
-| B04 | 业务 API、资产、运行记录与统一整合 | 主控 | TODO | B01/B02/B03 |
-| B05 | 三平台真实闭环 | 主控 | TODO | B04；正式平台图数单独验收 |
-| R01 | 新上下文完整独立评审 | 主控 / reviewer | TODO | B05 |
-| R02 | 实际缺陷修复与定向复验 | 主控 | TODO | R01 |
-| R03 | 三组真实结果、录屏、说明书与发布材料 | 主控 | TODO | R02；按授权处理对外发布/提交 |
+| /root/ima_engineer | /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ima / codex/s2-ima | src/server/ima/**、tests/ima/** | db0d0f0→8e73239；a241ebf→3e78ec2 | completed |
+| /root/workflow_engineer | /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-workflow / codex/s2-workflow | src/server/workflow/**、llm/**、verification/**、prompts/runtime/**、tests/workflow/** | c0eb4b1→d1a9706 | completed |
+| /root/ui_engineer | /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ui / codex/s2-ui | src/app/**排除api、components/**、styles/**、tests/ui/** | 3717402→a7670be | completed |
+| /root/reviewer | 主控目录只读，无并行源码写入 | 只读源码/安全汇总；仅.local-evidence/stage2/reviewer/可写报告 | 原始9951bd8起，逐次定向复核集成修复 | completed；7f837b9定向复核PASS |
 
-## 子任务与所有权
+开发完成后，主控临时接管最小集成修复范围：workflow/index、verification/index、runtime提示词、marketing-workbench及相应测试；ima/adapter/errors与测试仅处理实际220021。主控额外拥有scripts/**、tests/runs/**和tests/contracts/**。不再并行写worker目录，根依赖未新增，只有一个npm锁文件。
 
-阶段一由主控作为唯一源码写入者，临时负责最小 ima/app/scripts/tests 和共享配置/契约，以及接口/调查/验收交接文档。两个工程/评审子任务只读，允许其指定忽略证据目录，不派生、不改源码。阶段二恢复 AGENTS 的工程角色分工；所有并行编码必须由主控预先准备独立 worktree/分支/基础提交。
-
-| task_id | 实际子智能体 | 目录/隔离 | 基准 | 约束/结果 | 状态 |
-| --- | --- | --- | --- | --- | --- |
-| preflight_audit | /root/preflight_audit | 当前根只读，无 worktree | 当时无 HEAD，不适用 | 工具可用/消息回传；未改文件 | completed |
-| F02-IMA | /root/ima_engineer | 当前根只读，无 worktree | 当时无 HEAD；草案 | 全部 ima_engineer TOML 约束显式传入；静态 PASS | completed |
-| F02-REVIEW | /root/reviewer | 当前根只读，无 worktree | 当时无 HEAD；草案 | 手册9页和阶段门槛审查 PASS | completed |
-| F06-REVIEW | /root/reviewer（同一子线程跟进） | 当前根只读 | 9099b03 | 3项P2，主控后续修复 | completed |
-| F07-REVIEW | 同上 | 当前根只读 | 5d2f8be；0.1暂定 | 3项修复复核 PASS，26测试 | completed |
-| F08-REVIEW | 同上 | 当前根只读 | 554ddba；1.0.0 | 新 live 映射与CSV链复核 PASS，30测试及7负向变异；无新P1/P2 | completed |
-
-没有 worker 代码提交待集成；没有外部/子工作树；没有并行编码。当前工具不提供独立线程销毁接口，全部子任务已结束，未声称销毁。下一轮工作树、branch、base_commit、allowed_paths 必须在实际创建后登记，不能填占位值后声称已派发。
-
-
-## 第二阶段启动
-
-实际接续HEAD为9bbb976，工作区干净；G1证据存在且对应代码未变，直接引用。主控先做B00，业务契约2.0.0为新增边界，保留Probe1.0.0。主控负责scripts/**与tests/runs/**、tests/contracts/**及API/存储/资产/共享配置；其它恢复原所有权。模型字段当前为空，已核查明确的本机配置及本地11434服务，无可用完整配置；G2继续，G3待最小真实模型请求。
-
-统一基线已提交：6d01f360c92e103f3781578d5a16ff8344b5d715。三个真实工作树已创建：
-
-|task|path|branch|base|contract|allowed|状态|
-|---|---|---|---|---|---|---|
-|S2-ima|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ima|codex/s2-ima|6d01f36|2.0.0 + 1.0.0|src/server/ima/**、tests/ima/**|已准备派发|
-|S2-workflow|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-workflow|codex/s2-workflow|6d01f36|2.0.0 + 1.0.0|src/server/workflow/**、src/server/llm/**、src/server/verification/**、prompts/runtime/**、tests/workflow/**|已准备派发|
-|S2-ui|/Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/s2-ui|codex/s2-ui|6d01f36|2.0.0 + 1.0.0|src/app/**（排除src/app/api/**）、src/components/**、src/styles/**、tests/ui/**|已准备派发|
-
-S2开发任务均实际completed；worker提交分别db0d0f0/a241ebf、c0eb4b1、3717402，主控逐个集成为8e73239/3e78ec2、d1a9706、a7670be。工具无销毁接口，不声称销毁。9951bd8为当前集成检查基线。S2-REVIEW正在主目录只读检查，唯一可写范围为忽略证据目录.local-evidence/stage2/reviewer/，完整角色TOML随任务单下发；不代替G4。
-
-主控集成修复所有权补充：开发worker已completed后，主控临时负责src/server/workflow/index.ts、src/components/marketing-workbench.tsx及对应tests/workflow、tests/ui中reviewer可复现问题的最小修复，避免原worker基线与集成版本分歧；不扩展其它功能。原worktree保留已提交交付快照。
-主控临时修复范围追加src/server/verification/index.ts：reviewer发现有依据的100% sRGB参数被当绝对宣传误拦截，仅修复此项与相关workflow回归检查。
-主控live集成修复范围追加prompts/runtime/**、src/server/workflow/index.ts、src/server/runs/service.ts及相关tests/runs/workflow：真实生成出现未支持的阅读舒适性推断（被独立核验拦截），收紧生成事实范围/提示并保留私有模型响应诊断，继续真实验收。
-主控最小修复范围追加src/server/ima/{adapter,errors}.ts与tests/ima/adapter.test.ts：本次live新增错误码220021（当日资料次数上限），沿用1.0.0的RATE_LIMITED安全边界并给出明确明天重试信息。运行服务允许同任务、同型号、24小时内的已取证快照用于重新生成/换平台场景，逐张重查缓存摘要并明确记录复用；换型号清空，不自动把失败请求换成假资料。
+worktree保留已提交交付快照，安装用node_modules符号链接已移除，源码无未提交变更。主控后续修复在集成分支，worker分支不代表最终运行版本。工具没有销毁接口；completed是实际任务结束状态，不声称已销毁线程。原preflight_audit及第一阶段只读任务已结束。
