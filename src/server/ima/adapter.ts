@@ -41,7 +41,9 @@ export function normalizeEntry(raw: unknown): Entry {
   const folder = r.folder_id !== undefined || r.name !== undefined;
   if (folder && r.media_id !== undefined && r.folder_id !== r.media_id) throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
   return { mediaId: requiredString(folder ? r.folder_id : r.media_id), title: requiredString(folder ? r.name : r.title),
-    kind: folder ? "folder" : "unknown",
+    // Live 2026-10-18: media_type=99 entries were opened successfully; their
+    // media_id matched returned FolderInfo.folder_id breadcrumbs.
+    kind: folder || r.media_type === 99 ? "folder" : "unknown",
     parentFolderId: typeof r.parent_folder_id === "string" ? r.parent_folder_id : null };
 }
 export class ImaAdapter {
@@ -52,8 +54,12 @@ export class ImaAdapter {
     let cursor = "";
     for (let page = 0; page < this.maxPages; page++) {
       const d = envelope(await this.call(method, { ...params, cursor }));
-      if (!Array.isArray(d[listKey]) || typeof d.is_end !== "boolean") throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
+      if (!Array.isArray(d[listKey])) throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
       items.push(...d[listKey]);
+      // Live search_knowledge sample contains only info_list, with neither
+      // pagination field. Treat as one bounded search response, not a full crawl.
+      if (method === "search_knowledge" && d.is_end === undefined && d.next_cursor === undefined) return items;
+      if (typeof d.is_end !== "boolean") throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
       if (d.is_end) return items;
       const next = requiredString(d.next_cursor);
       if (next === cursor || cursors.has(next)) throw new ImaError("PAGINATION_INVALID");
@@ -82,12 +88,14 @@ export class ImaAdapter {
     const hits = await this.searchEntries(kb, name);
     if (hits.length) {
       const folders = hits.filter(e => e.kind === "folder" && e.title === name);
-      if (folders.length > 1) throw new ImaError("MODEL_AMBIGUOUS", true);
       if (folders.length === 1) return { entries: await this.listEntries(kb, folders[0].mediaId), usedDirectoryFallback: false };
-      return { entries: hits.filter(e => e.kind !== "folder"), usedDirectoryFallback: false };
+      if (!folders.length && hits.some(e => e.title === "article.md")) return { entries: hits.filter(e => e.kind !== "folder"), usedDirectoryFallback: false };
     }
     // Scope traversal to P1 only; no unrelated library content is read.
-    const p1 = rootEntries.filter(e => e.title === "P1-产品参数库");
+    let p1 = rootEntries.filter(e => e.title === "P1-产品参数库");
+    if (!p1.length && rootEntries.length === 1 && rootEntries[0].kind === "folder") {
+      p1 = (await this.listEntries(kb, rootEntries[0].mediaId)).filter(e => e.title === "P1-产品参数库");
+    }
     if (p1.length !== 1) throw new ImaError("MODEL_AMBIGUOUS", true);
     const queue = [{ entry: p1[0], depth: 0 }];
     const visited = new Set<string>();

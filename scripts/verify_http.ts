@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
+import sharp from "sharp";
 import { ProbeReport } from "../src/contracts";
 
 async function main() {
@@ -35,6 +36,21 @@ async function main() {
     assert.equal(report.source, null); assert.equal(report.image, null);
     check("actual missing-credential preflight BLOCKED without downstream calls");
   } else check("actual configured preflight reported honestly");
+  if (process.env.APP_REQUIRE_LIVE === "true") assert.equal(report.status, "PASS", "live gate required by this acceptance run");
+  if (report.status === "PASS") {
+    assert.ok(report.product && report.source && report.image);
+    assert.equal(report.image.productKey, report.product.productKey);
+    const asset = await fetch(`${base}/api/assets/${report.image.imageId}`);
+    assert.equal(asset.status, 200);
+    assert.equal(asset.headers.get("content-type"), report.image.mimeType);
+    const bytes = Buffer.from(await asset.arrayBuffer());
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), report.image.contentDigest);
+    await sharp(bytes).raw().toBuffer();
+    check("live source and model-proven image report");
+    check("controlled image returns matching decodable bytes");
+    const crossSite = await fetch(`${base}/api/assets/${report.image.imageId}`, { headers: { "sec-fetch-site": "cross-site" } });
+    assert.equal(crossSite.status, 403); check("cross-site image access denied");
+  }
   const result = { checkedAt: new Date().toISOString(), mode: "local-http", base, checks, reportId: report.reportId, liveGate: report.status };
   await mkdir(".local-evidence/foundation", { recursive: true });
   await writeFile(".local-evidence/foundation/http.json", JSON.stringify(result, null, 2));

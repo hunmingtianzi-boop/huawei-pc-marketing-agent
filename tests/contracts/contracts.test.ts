@@ -8,8 +8,8 @@ test("synthetic: safe source view rejects provider IDs, raw URLs, headers and fu
   assert.equal(SourceView.safeParse(source).success, true);
   for (const key of ["providerRefs", "url", "headers", "raw", "privateContentRef"]) assert.equal(SourceView.safeParse({ ...source, [key]: "synthetic-private" }).success, false);
 });
-test("synthetic: mode explicit, identity never invented, provisional version enforced", () => {
-  const report = { reportId: randomUUID(), contractVersion: CONTRACT_VERSION, mode: "synthetic", status: "BLOCKED", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), stages: [], skillVersion: null, accountIdentity: "not_verified", source: null, image: null };
+test("synthetic: mode explicit, identity never invented, contract version enforced", () => {
+  const report = { reportId: randomUUID(), contractVersion: CONTRACT_VERSION, mode: "synthetic", status: "BLOCKED", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), stages: [], skillVersion: null, accountIdentity: "not_verified", product: null, source: null, image: null };
   assert.equal(ProbeReport.safeParse(report).success, true);
   assert.equal(ProbeReport.safeParse({ ...report, mode: "demo" }).success, false);
   assert.equal(ProbeReport.safeParse({ ...report, accountIdentity: "verified" }).success, false);

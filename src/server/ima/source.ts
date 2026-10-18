@@ -2,7 +2,10 @@ import { ImaError } from "./errors";
 
 export function assertProductDocument(document: string, productName: string) {
   const header = document.split(/\r?\n/).find(line => /^#\s+/.test(line))?.replace(/^#\s+/, "").trim();
-  if (header !== productName) throw new ImaError("MODEL_PARAMETER_MISMATCH");
+  // Live P1 sample explicitly names the HarmonyOS variant in its H1.
+  const displayName = header?.replace(/ - 产品事实$/, "");
+  if (displayName !== productName && displayName !== `${productName}（鸿蒙版）`) throw new ImaError("MODEL_PARAMETER_MISMATCH");
+  return displayName;
 }
 export function relativeImageReference(document: string, productName: string) {
   // Explicit model-named alt text in an already matched product document is

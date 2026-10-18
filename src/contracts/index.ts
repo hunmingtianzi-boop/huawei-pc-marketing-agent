@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Provisional until a live document AND model-proven image confirm provider mapping.
-export const CONTRACT_VERSION = "0.1.0-provisional" as const;
+// v1 foundation boundary confirmed against live document, directory and image.
+export const CONTRACT_VERSION = "1.0.0" as const;
 export const Mode = z.enum(["synthetic", "replay", "live"]);
 export const Status = z.enum(["PASS", "BLOCKED", "FAIL"]);
 export const Platform = z.enum(["wechat_article", "xiaohongshu", "wechat_moments"]);
@@ -40,7 +40,7 @@ export const FactPoint = z.object({
   sourceIds: z.array(id).min(1), status: z.enum(["supported", "unconfirmed", "conflicted"]),
 }).strict();
 export const ImageView = z.object({
-  imageId: id, productKey: id, sourceView: SourceView,
+  imageId: id, productKey: id, fileName: text, sourceView: SourceView,
   availability: z.enum(["verified", "unavailable", "expired", "unchecked"]),
   modelMatch: z.enum(["confirmed", "mismatch", "uncertain"]), modelMatchSummary: text,
   width: z.number().int().positive(), height: z.number().int().positive(), mimeType: text,
@@ -72,11 +72,11 @@ export const ProbeReport = z.object({
   reportId: id, contractVersion: z.literal(CONTRACT_VERSION), mode: Mode, status: Status,
   startedAt: iso, finishedAt: iso, stages: z.array(ProbeStage),
   skillVersion: z.string().nullable(), accountIdentity: z.literal("not_verified"),
-  source: SourceView.nullable(), image: ImageView.nullable(),
+  product: ProductSelection.nullable(), source: SourceView.nullable(), image: ImageView.nullable(),
 }).strict().superRefine((report, ctx) => {
   if (report.status !== "PASS") return;
   const complete = ProbeStageName.options.every(name => report.stages.filter(s => s.name === name && s.executed && s.status === "PASS").length === 1);
-  if (!complete || !report.source || report.image?.availability !== "verified" || report.image?.modelMatch !== "confirmed" || !report.image.previewAssetKey) {
+  if (!complete || !report.product || !report.source || report.image?.availability !== "verified" || report.image?.modelMatch !== "confirmed" || !report.image.previewAssetKey || report.image.productKey !== report.product.productKey || report.image.previewAssetKey !== report.image.imageId) {
     ctx.addIssue({ code: "custom", message: "PASS requires every executed step, parsed source and model-proven decoded image" });
   }
 });

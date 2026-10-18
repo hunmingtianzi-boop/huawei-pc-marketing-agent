@@ -36,7 +36,30 @@ test("synthetic: two known knowledge-base field groups normalize and conflicting
 test("synthetic: folder and media structures stay distinct, breadcrumb alias conflict rejected", () => {
   assert.equal(normalizeEntry({ folder_id: "f", name: "folder" }).kind, "folder");
   assert.equal(normalizeEntry({ media_id: "m", title: "document" }).kind, "unknown");
+  assert.equal(normalizeEntry({ media_id: "f", title: "folder", media_type: 99 }).kind, "folder");
   assert.throws(() => normalizeEntry({ folder_id: "f", name: "folder", media_id: "other" }), errorCode("PROVIDER_SCHEMA_UNRECOGNIZED"));
+});
+test("synthetic regression from live shape: search without pagination is one bounded response", async () => {
+  const adapter = new ImaAdapter(async () => ok({ info_list: [{ media_id: "m", title: "article.md", media_type: 7 }] }));
+  assert.equal((await adapter.searchEntries("kb", "Synthetic Model")).length, 1);
+  await assert.rejects(new ImaAdapter(async () => ok({ info_list: [], next_cursor: "unexpected" })).searchEntries("kb", "Synthetic"), errorCode("PROVIDER_SCHEMA_UNRECOGNIZED"));
+});
+test("synthetic regression from live shape: ambiguous search uses wrapper/P1 path, not arbitrary first match", async () => {
+  const calls: string[] = [];
+  const adapter = new ImaAdapter(async (method, args) => {
+    if (method === "search_knowledge") return ok({ info_list: [{ media_id: "other1", title: "Model", media_type: 99 }, { media_id: "other2", title: "Model", media_type: 99 }] });
+    calls.push(String(args.folder_id));
+    const entries: Record<string, unknown[]> = {
+      wrapper: [{ media_id: "p1", title: "P1-产品参数库", media_type: 99 }],
+      p1: [{ media_id: "category", title: "01-鸿蒙电脑", media_type: 99 }],
+      category: [{ media_id: "model", title: "Model", media_type: 99 }],
+      model: [{ media_id: "facts", title: "产品事实.md", media_type: 7, parent_folder_id: "model" }],
+    };
+    return page(entries[String(args.folder_id)], "knowledge_list");
+  });
+  const result = await adapter.findProduct("kb", "Model", [{ mediaId: "wrapper", title: "target", kind: "folder", parentFolderId: null }]);
+  assert.equal(result.entries[0].title, "产品事实.md");
+  assert.deepEqual(calls, ["wrapper", "p1", "category", "model"]);
 });
 test("synthetic: permission, update, network and malformed schema differ from empty result", () => {
   for (const [code, expected] of [[110030, "PERMISSION_DENIED"], [-200, "SKILL_UPDATE_REQUIRED"], [-100, "NETWORK_ERROR"], [110010, "NETWORK_ERROR"], [429, "RATE_LIMITED"], [110021, "RATE_LIMITED"], [2, "PROVIDER_ERROR"]] as const) assert.throws(() => envelope({ code }), errorCode(expected));
