@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/ima/*.test.ts tests/contracts/*.test.ts",
+    "test": "tsx --test tests/ima/*.test.ts tests/contracts/*.test.ts tests/workflow/*.test.ts tests/runs/*.test.ts",
     "verify:ima": "tsx scripts/verify_ima_connection.ts",
     "verify:http": "tsx scripts/verify_http.ts"
   },
