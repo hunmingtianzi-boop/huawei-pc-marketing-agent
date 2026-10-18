@@ -285,3 +285,13 @@
 ## 11. 第二阶段增量（2026-10-18）
 
 新增业务2.0.0与接入1.0.0并存，不改ProbeReport边界。实际业务schema、公共函数签名与端点见src/contracts/business.ts及docs/BUSINESS_API.md；canonical摘要见digests.ts。运行快照只包含安全视图，SourceDocument/媒体bytes与访问引用均为私有服务端结构。规则核验和独立语义核验绑定当前任务版本、稿摘要、证据ID/摘要、策略ID/摘要。220021当日额度映射既有RATE_LIMITED，使用固定次日提示，未知错误仍不冒充空资料。
+
+## 交付补充：业务 2.1.0 / local 来源
+
+基础接入 1.0.0 不变。业务新增 mode=local，默认创建 local；live/synthetic 兼容。RunResult 解析旧 2.0.0 并归一为 2.1.0；旧证据摘要不改写。ProductEvidence.provenanceMode、executionEvidence.retrievalMode、ExportResponse.provenanceMode 支持 local，模型 generationMode/semanticMode 仍须为 live，禁止 local 用人工模型通过导出。资料 local 不等于 ima live。
+
+LocalSourceOptions={rootDir?:string} 仅服务端；默认 rootDir 为 LOCAL_KB_ROOT 或主目录/华为PC全板块深度知识库_v7。请求不能指定文件路径。src/server/ima/local.ts 导出 retrieveLocalEvidence(request:RetrievalRequest,services:RetrievalServices,options?:LocalSourceOptions):Promise<RetrievalResult> 和 readLocalCatalog(options?:LocalSourceOptions):Promise<LocalCatalog>。catalog 格式见 src/contracts/business.ts。
+
+只读扫描 P1-产品参数库/01-鸿蒙电脑 与 02-MateBook-Windows 各产品目录的 产品事实.md、图片索引.csv 和原件；忽略扩展营销/竞品文案。H1 精确具体型号、CSV 产品型号与文件名/真实解码摘要共同构成图片依据。拒绝目录越界与符号链接外逃，不取 CSV 外链；不重复图凑数。安全视图只包含相对定位和短摘录，完整原文私存。local 路径中 callIma/fetchMedia 明确拒绝，实际模型留服务端。
+
+DraftPreview 新增可选 platform（默认 wechat_article 兼容旧调用），按当前草稿渲染模拟视图；平台切换仍走 input 修订/重生成，不通过切换预览冒充适配成稿。仿真界面明确未发布，无虚构阅读/点赞/亲测数据。

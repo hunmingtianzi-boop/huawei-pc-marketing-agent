@@ -72,7 +72,7 @@ export function createRunService(deps:Services){
     await stage("generating","正在从已支持事实生成平台图文。");
     const model=modelFor(current);
     const outcome=await deps.modules.generateDraft({brief:current.brief,strategy:current.strategy!,evidence,version},model);
-    if(outcome.draft.version!==version||outcome.draft.contentDigest!==contentDigest(outcome.draft)||outcome.generationMode!==current.mode)throw new BusinessError("DRAFT_INVALID","生成版本、摘要或模式不一致。",409);
+    if(outcome.draft.version!==version||outcome.draft.contentDigest!==contentDigest(outcome.draft)||outcome.generationMode!==(current.mode==="synthetic"?"synthetic":"live"))throw new BusinessError("DRAFT_INVALID","生成版本、摘要或模式不一致。",409);
     current=await update(run=>{run.draft=outcome.draft;run.executionEvidence={retrievalMode:evidence.provenanceMode,generationMode:outcome.generationMode,modelInvoked:outcome.modelInvoked,model:outcome.model,endpointOrigin:outcome.endpointOrigin};});
    }
    current=await stage("validating","正在独立核验所有文案、事实引用与图片。");
@@ -132,7 +132,7 @@ export function createRunService(deps:Services){
 let singleton:ReturnType<typeof createRunService>|undefined;
 function service(){return singleton??=createRunService({modules:runtimeModules(),root:dataRoot(),syntheticEnabled:process.env.APP_ENABLE_SYNTHETIC==="true",modelSettings:()=>readModelSettings(),retrievalServices:async(run,privateDir)=>{
  const persistPrivate=async(fileName:string,data:string|Uint8Array)=>{if(path.basename(fileName)!==fileName||fileName.includes("..")||fileName.length>180)throw new BusinessError("PRIVATE_PATH_INVALID","私有证据文件路径不合法。",400);await mkdir(privateDir,{recursive:true,mode:0o700});await writeFile(path.join(privateDir,fileName),data,{mode:0o600});};
- if(run.mode==="synthetic")return {callIma:async()=>{throw new BusinessError("SYNTHETIC_NETWORK_DENIED","合成任务不能调用真实 ima。",409);},fetchMedia,decodeImage,persistPrivate};
+ if(run.mode!=="live")return {callIma:async()=>{throw new BusinessError("SOURCE_NETWORK_DENIED","当前来源模式不能调用真实 ima。",409);},fetchMedia:async()=>{throw new BusinessError("SOURCE_NETWORK_DENIED","当前来源模式不接受网络素材。",409);},decodeImage,persistPrivate};
  const skill=await inspectSkill(process.env.IMA_SKILL_PATH||"vendor/ima-skill/ima_api.cjs");const call=officialTransport(skill.script,dataRoot());let count=0;const started=Date.now();
  return {callIma:async(method,params)=>{if(++count>80||Date.now()-started>150000)throw new BusinessError("BUDGET_EXCEEDED","本次只读取证预算已用完。",409,true);const response=await call(method,params);await persistPrivate(`response-${count}-${method}.json`,JSON.stringify(response));return response;},fetchMedia,decodeImage,persistPrivate};
 }});}

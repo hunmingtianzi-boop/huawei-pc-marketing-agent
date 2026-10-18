@@ -7,7 +7,7 @@ export function canExport(run:RunResult):boolean{
  if(v.status!=="passed"||v.checkedVersion!==run.currentVersion||draft.version!==run.currentVersion||v.checkedContentDigest!==contentDigest(draft)||draft.contentDigest!==contentDigest(draft))return false;
  if(v.checkedEvidenceSetId!==e.evidenceSetId||v.checkedEvidenceDigest!==evidenceDigest(e)||e.snapshotDigest!==evidenceDigest(e)||v.checkedStrategyId!==s.strategyId||v.checkedStrategyDigest!==strategyDigest(s)||v.checkedBriefVersion!==b.briefVersion)return false;
  if(v.semanticMode==="not_run"||v.checks.length===0||v.checks.some(c=>c.status!=="passed")||[...run.issues,...v.issues].some(i=>i.status==="open"&&i.severity!=="warning")||e.conflicts.length)return false;
- if(run.mode==="live"&&(e.provenanceMode!=="live"||run.executionEvidence.generationMode!=="live"||!run.executionEvidence.modelInvoked||v.semanticMode!=="live"))return false;
+ if(run.mode!=="synthetic"&&(e.provenanceMode!==run.mode||run.executionEvidence.generationMode!=="live"||!run.executionEvidence.modelInvoked||v.semanticMode!=="live"))return false;
  if(run.mode==="synthetic"&&(e.provenanceMode!=="synthetic"||v.semanticMode!=="synthetic"))return false;
  const ids=draft.selectedImages.map(i=>i.imageId);const range=IMAGE_COUNTS[b.platform];if(ids.length<range.min||ids.length>range.max||new Set(ids).size!==ids.length)return false;
  const images=ids.map(id=>e.images.find(i=>i.imageId===id));if(images.some(i=>!i||i.productKey!==e.product.productKey||i.availability!=="verified"||i.modelMatch!=="confirmed"))return false;

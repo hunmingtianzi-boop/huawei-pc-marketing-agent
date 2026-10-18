@@ -1,8 +1,11 @@
 import { z } from "zod";
-import { Platform, Mode, TaskBrief, ContentStrategy, ProductSelection, FactPoint, ImageView, SourceView, RunState } from "./index";
+import { Platform, TaskBrief, ContentStrategy, ProductSelection, FactPoint, ImageView, SourceView, RunState } from "./index";
 
 // Additive business boundary; foundation probe remains 1.0.0 unchanged.
-export const BUSINESS_CONTRACT_VERSION = "2.0.0" as const;
+export const BUSINESS_CONTRACT_VERSION = "2.1.0" as const;
+export const BusinessMode = z.enum(["live", "synthetic", "local"]);
+export type BusinessMode = z.infer<typeof BusinessMode>;
+export const EvidenceMode = z.enum(["live", "synthetic", "replay", "local"]);
 const id = z.uuid();
 const text = z.string().min(1);
 const iso = z.iso.datetime();
@@ -27,7 +30,7 @@ export type ValidationIssue = z.infer<typeof ValidationIssue>;
 export const EvidenceConflict = z.object({ fieldKey: text, sourceIds: z.array(id).min(1), message: text }).strict();
 // Safe evidence only. Complete documents/provider refs/bytes stay in RetrievalResult.
 export const ProductEvidence = z.object({
-  evidenceSetId: id, product: ProductSelection, retrievedAt: iso, provenanceMode: Mode,
+  evidenceSetId: id, product: ProductSelection, retrievedAt: iso, provenanceMode: EvidenceMode,
   sources: z.array(SourceView), facts: z.array(FactPoint), images: z.array(ImageView),
   conflicts: z.array(EvidenceConflict), coverageGaps: z.array(text), snapshotDigest: text,
 }).strict();
@@ -51,12 +54,12 @@ export const ValidationReport = z.object({
 }).strict();
 export type ValidationReport = z.infer<typeof ValidationReport>;
 export const ExecutionEvidence = z.object({
-  retrievalMode: Mode, generationMode: z.enum(["not_run", "synthetic", "live"]),
+  retrievalMode: EvidenceMode, generationMode: z.enum(["not_run", "synthetic", "live"]),
   modelInvoked: z.boolean(), model: z.string().nullable(), endpointOrigin: z.string().nullable(),
 }).strict();
 export const RunResult = z.object({
-  contractVersion: z.literal(BUSINESS_CONTRACT_VERSION), runId: id, createdAt: iso, updatedAt: iso,
-  mode: z.enum(["live", "synthetic"]), input: TaskInput, brief: TaskBrief,
+  contractVersion: z.enum(["2.0.0", BUSINESS_CONTRACT_VERSION]).transform(() => BUSINESS_CONTRACT_VERSION), runId: id, createdAt: iso, updatedAt: iso,
+  mode: BusinessMode, input: TaskInput, brief: TaskBrief,
   state: RunState, currentVersion: z.number().int().positive(), activeOperationId: id.nullable(),
   strategy: ContentStrategy.nullable(), evidence: ProductEvidence.nullable(),
   draft: DraftContent.nullable(), validation: ValidationReport.nullable(), finalContent: DraftContent.nullable(),
@@ -65,7 +68,7 @@ export const RunResult = z.object({
   executionEvidence: ExecutionEvidence,
 }).strict();
 export type RunResult = z.infer<typeof RunResult>;
-export const CreateRunRequest = z.object({ input: TaskInput, mode: z.enum(["live", "synthetic"]).default("live") }).strict();
+export const CreateRunRequest = z.object({ input: TaskInput, mode: BusinessMode.default("local") }).strict();
 export type CreateRunRequest = z.infer<typeof CreateRunRequest>;
 const expected = z.number().int().positive();
 export const RunActionRequest = z.discriminatedUnion("action", [
@@ -78,7 +81,7 @@ export type RunActionRequest = z.infer<typeof RunActionRequest>;
 export const RunResponse = z.object({ run: RunResult }).strict();
 export const RunListResponse = z.object({ runs: z.array(RunResult) }).strict();
 export const ExportRequest = z.object({ expectedVersion: expected, format: z.enum(["markdown", "text"]).default("markdown") }).strict();
-export const ExportResponse = z.object({ runId: id, version: expected, fileName: text, mimeType: text, content: z.string(), provenanceMode: Mode }).strict();
+export const ExportResponse = z.object({ runId: id, version: expected, fileName: text, mimeType: text, content: z.string(), provenanceMode: EvidenceMode }).strict();
 export type ExportResponse = z.infer<typeof ExportResponse>;
 export const SemanticVerdict = z.object({ supported: z.boolean(), issues: z.array(z.object({ location: z.string(), message: text }).strict()).max(50) }).strict();
 export type SemanticVerdict = z.infer<typeof SemanticVerdict>;
@@ -92,7 +95,7 @@ export type GenerationOutcome = { draft: DraftContent; generationMode: "live" | 
 export type ValidationContext = GenerationContext & { draft: DraftContent };
 export type SourceDocument = { sourceId: string; title: string; locator: string; text: string };
 export type CachedAsset = { imageId: string; bytes: Uint8Array; mimeType: string };
-export type RetrievalRequest = { runId: string; productRequest: string; mode: "live" | "synthetic" };
+export type RetrievalRequest = { runId: string; productRequest: string; mode: BusinessMode };
 export type RetrievalResult = { evidence: ProductEvidence; assets: CachedAsset[]; documents: SourceDocument[] };
 export type MediaAccess = { url: string; headers: Record<string, string> };
 export type RetrievalServices = {
@@ -111,3 +114,11 @@ export type RuntimeModules = {
   createSyntheticModelClient: () => ModelClient;
 };
 export type ModelSettings = { baseUrl: string; apiKey: string; model: string };
+
+// Local source uses a server-owned root; no client paths or URLs are accepted.
+export type LocalSourceOptions = { rootDir?: string };
+export const LocalCatalog = z.object({ sourceMode: z.literal("local"), available: z.boolean(), products: z.array(z.object({ productRequest: text, displayName: text, imageCount: z.number().int().nonnegative() }).strict()) }).strict();
+export type LocalCatalog = z.infer<typeof LocalCatalog>;
+// src/server/ima/local.ts exports retrieveLocalEvidence(request, services, options?)
+// and readLocalCatalog(options?): Promise<LocalCatalog>. Retrieval result preserves
+// original-source titles, relative locators, content hashes and local provenance.

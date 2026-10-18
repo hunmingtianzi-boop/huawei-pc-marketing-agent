@@ -29,7 +29,7 @@ export default function MarketingWorkbench() {
   const [history, setHistory] = useState<RunResult[]>([]);
   const [input, setInput] = useState<TaskInput>({ ...DEFAULT_INPUT });
   const [draft, setDraft] = useState<DraftEditable | null>(null);
-  const [mode, setMode] = useState<"live" | "synthetic">("live");
+  const [mode, setMode] = useState<"live" | "synthetic" | "local">("local");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -176,7 +176,7 @@ export default function MarketingWorkbench() {
           <label className="wide">希望提及的主张（每行一条，必须由资料支持）<textarea value={input.requestedClaims.join("\n")} onChange={e => changeInput("requestedClaims", e.target.value.split("\n"))} rows={3} /></label>
           <label className="wide">应避免的表达（每行一条）<textarea value={input.constraints.avoid.join("\n")} onChange={e => changeInput("constraints", { ...input.constraints, avoid: e.target.value.split("\n").filter(Boolean) })} rows={2} /></label>
         </div></details>
-        {!run && <label className="mode-picker">运行模式<select value={mode} onChange={e => setMode(e.target.value as "live" | "synthetic")}><option value="live">live · 实际 ima 与模型</option><option value="synthetic">synthetic · 人工样例，仅验证逻辑</option></select></label>}
+        {!run && <label className="mode-picker">运行模式<select value={mode} onChange={e => setMode(e.target.value as "live" | "synthetic" | "local")}><option value="live">live · 实际 ima 与模型</option><option value="synthetic">synthetic · 人工样例，仅验证逻辑</option></select></label>}
         {(run?.mode ?? mode) === "synthetic" && <p className="notice">人工构造样例模式：不属于真实产品生成或真实验收。仅在服务端明确允许时可用。</p>}
         <div className="toolbar"><button disabled={busy}>{busy ? "提交中…" : run ? "保存任务并重新执行 →" : "开始执行 →"}</button><span className="hint">{imageRange ? `此平台需要 ${imageRange.min}–${imageRange.max} 张不同的 ima 型号图片。` : "补充必要条件后执行。"}</span></div>
       </form>

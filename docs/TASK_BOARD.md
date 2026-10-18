@@ -32,3 +32,7 @@
 开发完成后，主控临时接管最小集成修复范围：workflow/index、verification/index、runtime提示词、marketing-workbench及相应测试；ima/adapter/errors与测试仅处理实际220021。主控额外拥有scripts/**、tests/runs/**和tests/contracts/**。不再并行写worker目录，根依赖未新增，只有一个npm锁文件。
 
 worktree保留已提交交付快照，安装用node_modules符号链接已移除，源码无未提交变更。主控后续修复在集成分支，worker分支不代表最终运行版本。工具没有销毁接口；completed是实际任务结束状态，不声称已销毁线程。原preflight_audit及第一阶段只读任务已结束。
+
+## 本轮交付开发
+
+主控唯一 /root；工具实际支持 spawn/followup/list/message，无自定义角色参数、无销毁接口。三个独立 checkout，最多3 worker，不递归。基线契约2.1.0/1.0.0，统一基线提交后登记实际SHA。ima_worker 限src/server/ima/**、tests/ima/**；workflow_worker限既有workflow/llm/verification/runtime提示词和tests/workflow/**；ui_worker限既有UI目录（排除api）。主控负责共享/API/运行/资产/脚本/交付文档；完成集成后接管必要修复。真实材料与凭证不复制到worktree，worker只用synthetic。
