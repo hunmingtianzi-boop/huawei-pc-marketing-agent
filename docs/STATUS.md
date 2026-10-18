@@ -1,5 +1,11 @@
 # 当前状态与交接
 
+## GitHub 更新（2026-10-18）
+
+- 已将多页面应用源码e45e20c及交接提交c8c4be5同步到公开仓库 https://github.com/hunmingtianzi-boop/huawei-pc-marketing-agent 的main，逐树/逐提交哈希与本地一致；本节记录随后同步。
+- 使用既有GitHub官方Git Data API，按fast-forward更新远端，不强制覆盖独立修改。新增19个blob的当前凭证/私有路径扫描PASS；不上传.env.local、原始知识库、运行缓存或本机图文示例。证据在.local-evidence/github-update-20261018/。
+- 本次仅同步现有已集成内容，不重跑模型或声称新增业务验收；沿用多页面版本152项测试、类型、构建及本机HTTP证据。Flash模型完整图文流程和历史G4未完成项仍保留。
+
 ## 最新 UI 改版（2026-10-18）
 
 - 用户要求真正多页面并参考华为 UI，随后要求快速完成、无需审阅。当前分支 `codex/stage2`，应用源码 `e45e20c`（worker `1a5a7d9` 顺序集成）；保留并发任务的模型配置、公开仓库及文档改动。无新增依赖、无公共契约/API修改。
@@ -7,7 +13,7 @@
 - 根布局常驻唯一工作台，切页保持当前输入、编辑、图集和轮询。事实链接切换到依据并展开定位；取消/失败的历史载入允许重试；已有核验失效、竞态和受控导出保护保留。未保存编辑有丢弃/刷新提示。
 - 本机实际检查：152/152 测试、typecheck、生产build PASS；构建保留原有3条本地动态路径追踪warning。五路由HTTP200、主导航、10型号local目录、7条现有任务和3组受控图片、presence-only模型配置DTO检查 PASS。证据 `.local-evidence/ui-multipage/{tests.log,typecheck.log,build.log,http.json}`。
 - 已启动新版生产进程并实际打开首页，截图 `.local-evidence/ui-multipage/home.jpg`。外部华为页面浏览器控制曾超时、原生截屏曾报错，官网HTML/CSS可读取；新版本地首页浏览器截图成功。本轮没有重新生成或修改现有真实任务，没有声称完成新模型端到端验收；用户要求省略独立审阅，review任务已中断。历史G4视频/赛事外链限制继续保留。
-- UI worker completed，无待集成修改；当前未推送本轮UI或重打旧交付包。可直接使用顶部导航开始新任务或重开记录。
+- UI worker completed，无待集成修改；本段交接时未推送，现已按上方GitHub更新记录同步；未重打旧交付包。可直接使用顶部导航开始新任务或重开记录。
 
 ## 最新模型配置（2026-10-18）
 
