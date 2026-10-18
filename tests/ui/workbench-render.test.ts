@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import MarketingWorkbench from "../../src/components/marketing-workbench";
-test("SSR initial workspace labels three platforms and defaults to live without a fabricated draft", () => {
+test("SSR initial workspace labels three platforms and defaults to local without a fabricated draft", () => {
   const markup = renderToStaticMarkup(createElement(MarketingWorkbench));
   for (const label of ["完整产品型号", "目标人群", "使用场景", "发布平台", "内容目标", "朋友圈", "公众号", "小红书", "开始执行"]) assert.ok(markup.includes(label), label);
-  assert.ok(markup.includes('value="live" selected=""'));
+  assert.ok(markup.includes('value="local" selected=""'));
   assert.ok(markup.includes("synthetic · 人工样例，仅验证逻辑"));
+  assert.ok(markup.includes("从本地知识库选择产品"));
+  assert.ok(markup.includes('href="#content-preview"'));
+  assert.ok(markup.includes('id="content-preview"'));
   assert.equal(markup.includes("复制核验成稿"), false);
   assert.equal(markup.includes("当前版本核验通过"), false);
   assert.equal(markup.includes("apiKey"), false);
