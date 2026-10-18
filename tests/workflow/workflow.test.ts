@@ -143,10 +143,13 @@ test("moments generation narrows facts but edited draft verification keeps full 
 
 test('general software requirement question needs no invented citation, product assertion and visible UUID do',async()=>{
  const context=fixture('xiaohongshu');const draft=(await generateDraft(context,synthetic)).draft;
- const general=edited(draft,x=>x.bodyBlocks.unshift({blockKey:'decision',text:'选购前先核对是否需要特定系统支持，并整理课程要求。',factIds:[]}));
+ const general=edited(draft,x=>x.bodyBlocks.unshift({blockKey:'decision',text:'选购前先核对是否需要特定系统支持，并整理课程要求。请确认设备是否支持课程软件。',factIds:[]}));
  // Keep block keys unique in this test fixture.
  general.bodyBlocks=general.bodyBlocks.filter((b,i,a)=>a.findIndex(x=>x.blockKey===b.blockKey)===i);general.contentDigest=contentDigest(general);
  assert.equal((await validateDraft({...context,draft:general},synthetic)).status,'passed');
  const assertion=edited(draft,x=>{x.bodyBlocks[0].text='该电脑支持全部课程软件。';x.bodyBlocks[0].factIds=[];});assert.ok((await validateDraft({...context,draft:assertion},synthetic)).issues.some(i=>i.code==='SOURCE_MISSING'));
  const referenced=edited(draft,x=>x.title+=' '+context.evidence.facts[0].factId);assert.ok((await validateDraft({...context,draft:referenced},synthetic)).issues.some(i=>i.code==='REFERENCE_IN_VISIBLE_TEXT'));
 });
+
+test('newlines followed by decimal specifications are not mistaken for list numbering',async()=>{const context=fixture();const fact=context.evidence.facts[0];fact.supportedStatement='长度\n312.6 mm\n宽度\n226.8 mm\n厚度\n14.5 mm';fact.value=fact.supportedStatement;context.evidence.snapshotDigest=evidenceDigest(context.evidence);const d=(await generateDraft(context,synthetic)).draft;d.bodyBlocks[0].text='长度312.6 mm，宽度226.8 mm，厚度14.5 mm。';d.bodyBlocks[0].factIds=[fact.factId];d.contentDigest=contentDigest(d);const report=await validateDraft({...context,draft:d},synthetic);assert.equal(report.status,'passed',JSON.stringify(report.issues));});
+for(const subject of ['机身','整机','设备','笔记本'])test(`unreferenced ${subject} assertion is blocked even when evidence elsewhere supports it`,async()=>{const context=fixture();const d=(await generateDraft(context,synthetic)).draft;const changed=edited(d,x=>{x.bodyBlocks[0].text=`建议了解，${subject}支持多设备协同。`;x.bodyBlocks[0].factIds=[];});const report=await validateDraft({...context,draft:changed},synthetic);assert.ok(report.issues.some(i=>i.code==='SOURCE_MISSING'));});

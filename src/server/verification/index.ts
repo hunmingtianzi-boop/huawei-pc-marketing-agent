@@ -8,7 +8,7 @@ import { runtimePrompt } from "../workflow/prompts";
 
 const normalized = (s: string) => s.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
 const withoutReferences = (s: string) => s.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "");
-const digits = (s: string) => [...withoutReferences(s).normalize("NFKC").replace(/(?:^|\n)\s*\d+[.、)]/g, "").matchAll(/\d+(?:\.\d+)?/g)].map(x => x[0]);
+const digits = (s: string) => [...withoutReferences(s).normalize("NFKC").replace(/(?:^|\n)\s*\d+[.、)]\s+/g, "").matchAll(/\d+(?:\.\d+)?/g)].map(x => x[0]);
 const numberClaims = (s: string) => [...withoutReferences(s).normalize("NFKC").matchAll(/\d+(?:\.\d+)?\s*(?:GHz|MHz|TB|GB|MB|kg|g|mm|cm|mAh|Wh|W|Hz|nits|nit|h|K|英寸|寸|小时|分钟|千克|克|毫米|厘米|元|%|倍|万|亿|个接口|核)/gi)].map(x => normalized(x[0]));
 
 export async function validateDraft(context: ValidationContext, model: ModelClient): Promise<ValidationReport> {
@@ -41,7 +41,12 @@ export async function validateDraft(context: ValidationContext, model: ModelClie
       if (!fact || fact.status !== "supported" || fact.productKey !== evidence.product.productKey) { add("UNSUPPORTED_CLAIM", "fact", block.blockKey, "正文引用不存在、未确认或错配型号的事实。", [], "retrieve"); continue; }
       for (const qualifier of fact.qualifiers) if (!normalized(block.text).includes(normalized(qualifier))) add("FACT_QUALIFIER_MISSING", "fact", block.blockKey, `事实引用需要保留限制条件：${qualifier}`, fact.sourceIds);
     }
-    if (!block.factIds.length && /^(?:支持|搭载|采用|配备|拥有|具备)|(?:该(?:机|电脑|产品)|本(?:机|电脑|产品)|这(?:款|台)|HUAWEI|MateBook).{0,30}(?:支持|搭载|采用|配备|拥有|具备)|(?:产品|屏幕|处理器|续航|重量|接口).{0,12}(?:为|是|使用|采用|支持|配备|约|：)/i.test(block.text)) add("SOURCE_MISSING", "fact", block.blockKey, "产品事实陈述需要绑定对应事实引用。", [], "retrieve");
+    if (!block.factIds.length && block.text.split(/[。！？\n]/).some(sentence => {
+      const predicate = /支持|搭载|采用|配备|拥有|具备|分辨率|处理器|续航|重量|轻至|薄至|屏幕|接口/.test(sentence);
+      const generalStep = /是否|需求|需要|核对|确认|咨询|建议|选购前|整理/.test(sentence);
+      const assertion = [...sentence.matchAll(/(?:这|该|本|它|产品|机身|整机|设备|笔记本|电脑).{0,20}?(?:支持|搭载|采用|配备|拥有|具备|重约|轻至|薄至)/g)].some(match => !/是否|能否|需要|需/.test(match[0]));
+      return predicate && (!generalStep || assertion);
+    })) add("SOURCE_MISSING", "fact", block.blockKey, "产品事实陈述需要绑定对应事实引用。", [], "retrieve");
     const blockBasis = block.factIds.map(id => facts.get(id)).filter(Boolean).map(f => `${f!.supportedStatement} ${f!.value} ${f!.unit || ""} ${f!.qualifiers.join(" ")}`).join(" ");
     const validNumbers = new Set(numberClaims(`${blockBasis} ${evidence.product.displayName}`));
     for (const numeric of numberClaims(block.text)) if (!validNumbers.has(numeric)) add("UNSUPPORTED_NUMBER_OR_UNIT", "fact", block.blockKey, "正文包含引用事实不支持的数值或单位。", block.factIds.flatMap(id => facts.get(id)?.sourceIds || []));
