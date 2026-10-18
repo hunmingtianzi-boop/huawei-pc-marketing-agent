@@ -14,6 +14,7 @@ import {readModelSettings} from "./model-config";
 import {inspectSkill,officialTransport} from "../ima/transport";
 import {fetchMedia,decodeImage} from "../assets/media";
 import {cacheRunAssets,readRunAsset} from "../assets/run-assets";
+import {htmlForRun} from "./html-export";
 import {canExport,markdownForRun} from "./export-gate";
 
 type Services = { modules:RuntimeModules; root:string; syntheticEnabled:boolean; modelSettings:()=>ModelSettings|null; retrievalServices:(run:Run,privateDir:string)=>Promise<RetrievalServices> };
@@ -54,7 +55,7 @@ export function createRunService(deps:Services){
     if(reusable){
      const assets=[];for(const image of cached.images){const asset=await readRunAsset(repo.directory(id),current,image.imageId);assets.push({imageId:image.imageId,bytes:asset.bytes,mimeType:asset.mimeType});}
      retrieved={evidence:cached,assets,documents:[]};
-     await update(run=>{run.stageSummary.push({stage:"retrieving",at:now(),status:"passed",summary:`复用本任务 ${cached.retrievedAt} 已实际取得的 ${current.mode} 资料快照；已逐张重查本机原件摘要，本次未重新请求 ima。`});});
+     await update(run=>{run.stageSummary.push({stage:"retrieving",at:now(),status:"passed",summary:`复用本任务 ${cached.retrievedAt} 已实际取得的 ${current.mode} 资料快照；已逐张重查本机原件摘要，本次未重新读取来源。`});});
     }else{
      const services=await deps.retrievalServices(current,privateDir);
      retrieved=await deps.modules.retrieveEvidence({runId:id,productRequest:current.brief.productRequest,mode:current.mode},services);
@@ -116,12 +117,12 @@ export function createRunService(deps:Services){
   if(action.action!=="revise"&&updated.activeOperationId){const job=perform(updated,action.action);pending.add(job);void job.then(()=>pending.delete(job),()=>pending.delete(job));}
   return getRun(id);
  }
- async function exportRun(id:string,version:number,format:"markdown"|"text"):Promise<ExportResponse>{
+ async function exportRun(id:string,version:number,format:"markdown"|"text"|"html"):Promise<ExportResponse>{
   // Re-check under the same per-run lock used by edits. No stale export races.
   let result:ExportResponse|undefined;
-  await repo.update(id,run=>{if(run.currentVersion!==version)throw new BusinessError("VERSION_CONFLICT","请求的导出版本已失效。",409);if(!canExport(run))throw new BusinessError("EXPORT_NOT_READY","当前版本尚未核验通过。",409);result={runId:id,version,fileName:`marketing-${id}-v${version}.${format==="markdown"?"md":"txt"}`,mimeType:format==="markdown"?"text/markdown":"text/plain",content:markdownForRun(run,format),provenanceMode:run.evidence!.provenanceMode};return run;});
+  await repo.update(id,run=>{if(run.currentVersion!==version)throw new BusinessError("VERSION_CONFLICT","请求的导出版本已失效。",409);if(!canExport(run))throw new BusinessError("EXPORT_NOT_READY","当前版本尚未核验通过。",409);result={runId:id,version,fileName:`marketing-${id}-v${version}.${format==="markdown"?"md":format==="html"?"html":"txt"}`,mimeType:format==="markdown"?"text/markdown":format==="html"?"text/html":"text/plain",content:format==="html"?"":markdownForRun(run,format),provenanceMode:run.evidence!.provenanceMode};return run;});
   const snapshot=await repo.get(id);
-  try{for(const image of snapshot.draft!.selectedImages)await readRunAsset(repo.directory(id),snapshot,image.imageId);}
+  try{const assets=new Map<string,{bytes:Buffer;mimeType:string}>();for(const image of snapshot.draft!.selectedImages)assets.set(image.imageId,await readRunAsset(repo.directory(id),snapshot,image.imageId));if(format==="html")result!.content=htmlForRun(snapshot,assets);}
   catch(error){await repo.update(id,run=>{if(run.currentVersion!==version)return null;invalidate(run);run.state="blocked";run.issues=[issue("MEDIA_UNAVAILABLE","当前图片原件不可用，已撤销导出。","image")];return run;});throw error;}
   // An edit during async file validation must invalidate this response too.
   const current=await repo.get(id);if(current.currentVersion!==version||!canExport(current)||current.draft!.contentDigest!==snapshot.draft!.contentDigest)throw new BusinessError("VERSION_CONFLICT","导出检查期间任务已修改。",409);
@@ -140,4 +141,4 @@ export async function createRun(request:CreateRunRequest){return service().creat
 export async function getRun(id:string){return service().getRun(id);}
 export async function listRuns(){return service().listRuns();}
 export async function actOnRun(id:string,request:RunActionRequest){return service().actOnRun(id,request);}
-export async function exportRun(id:string,version:number,format:"markdown"|"text"){return service().exportRun(id,version,format);}
+export async function exportRun(id:string,version:number,format:"markdown"|"text"|"html"){return service().exportRun(id,version,format);}

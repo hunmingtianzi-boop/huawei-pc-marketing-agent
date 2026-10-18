@@ -36,3 +36,9 @@ worktree保留已提交交付快照，安装用node_modules符号链接已移除
 ## 本轮交付开发
 
 主控唯一 /root；工具实际支持 spawn/followup/list/message，无自定义角色参数、无销毁接口。三个独立 checkout，最多3 worker，不递归。基线契约2.1.0/1.0.0，统一基线提交后登记实际SHA。ima_worker 限src/server/ima/**、tests/ima/**；workflow_worker限既有workflow/llm/verification/runtime提示词和tests/workflow/**；ui_worker限既有UI目录（排除api）。主控负责共享/API/运行/资产/脚本/交付文档；完成集成后接管必要修复。真实材料与凭证不复制到worktree，worker只用synthetic。
+
+- DELIVERY-local: /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/delivery-local / codex/delivery-local / base b0a89b90709723d72bf5cd5bf4ed8b4257c46df8 / contract2.1.0 / scope src/server/ima/**, tests/ima/**.
+
+- DELIVERY-style: /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/delivery-style / codex/delivery-style / base b0a89b90709723d72bf5cd5bf4ed8b4257c46df8 / contract2.1.0 / scope src/server/workflow/**, src/server/llm/**, src/server/verification/**, prompts/runtime/**, tests/workflow/**.
+
+- DELIVERY-preview: /Users/zhouzihan/Documents/ChatGPT/华为黑客松/.worktrees/delivery-preview / codex/delivery-preview / base b0a89b90709723d72bf5cd5bf4ed8b4257c46df8 / contract2.1.0 / scope src/app/** excluding api, src/components/**, src/styles/**, tests/ui/**.

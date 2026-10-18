@@ -50,7 +50,7 @@ test('invalid model URL is safe absent configuration, never throws private URL',
 
 test('same-task validated snapshot reuse is explicit; new product must retrieve independently',async t=>{
  const actual=runtimeModules();let calls=0;const s=await setup(t,{retrieveEvidence:async(...args)=>{calls++;return actual.retrieveEvidence(...args);}});const r=await ready(s);
- await s.actOnRun(r.runId,{action:'regenerate',expectedVersion:1});await s.waitForIdle();const regenerated=await s.getRun(r.runId);assert.equal(calls,1);assert.equal(regenerated.exportable,true);assert.ok(regenerated.stageSummary.some(x=>x.summary.includes('复用本任务')&&x.summary.includes('本次未重新请求 ima')&&x.summary.includes('synthetic')));
+ await s.actOnRun(r.runId,{action:'regenerate',expectedVersion:1});await s.waitForIdle();const regenerated=await s.getRun(r.runId);assert.equal(calls,1);assert.equal(regenerated.exportable,true);assert.ok(regenerated.stageSummary.some(x=>x.summary.includes('复用本任务')&&x.summary.includes('本次未重新读取来源')&&x.summary.includes('synthetic')));
  await s.actOnRun(r.runId,{action:'revise',expectedVersion:2,patch:{input:{...input(),productRequest:'HUAWEI MateBook 16'}}});const changed=await s.getRun(r.runId);assert.equal(changed.evidence,null);await s.actOnRun(r.runId,{action:'execute',expectedVersion:3});await s.waitForIdle();const done=await s.getRun(r.runId);assert.equal(calls,2);assert.notEqual(done.evidence!.product.productKey,r.evidence!.product.productKey);assert.ok(done.evidence!.images.every(i=>i.productKey===done.evidence!.product.productKey));
 });
 test('same-task snapshot with broken image cannot regenerate through silent retrieval fallback',async t=>{const s=await setup(t);const r=await ready(s);await writeFile(path.join(s.repository.directory(r.runId),'assets',r.evidence!.images[0].imageId+'.bin'),'broken');await s.actOnRun(r.runId,{action:'regenerate',expectedVersion:1});await s.waitForIdle();const done=await s.getRun(r.runId);assert.equal(done.state,'blocked');assert.equal(done.issues[0].code,'MEDIA_UNAVAILABLE');assert.equal(done.exportable,false);});
@@ -58,3 +58,20 @@ test('same-task snapshot with broken image cannot regenerate through silent retr
 test('fresh execute bypasses even valid task cache and issues a new content revision',async t=>{const actual=runtimeModules();let calls=0;const s=await setup(t,{retrieveEvidence:async(...args)=>{calls++;return actual.retrieveEvidence(...args);}});const r=await ready(s);await s.actOnRun(r.runId,{action:'execute',expectedVersion:1});await s.waitForIdle();const done=await s.getRun(r.runId);assert.equal(calls,2);assert.equal(done.currentVersion,2);assert.equal(done.exportable,true);assert.notEqual(done.evidence!.evidenceSetId,r.evidence!.evidenceSetId);});
 
 test('conflicted snapshot never traps a retry after upstream correction',async t=>{const actual=runtimeModules();let calls=0;const s=await setup(t,{retrieveEvidence:async(...args)=>{const r=await actual.retrieveEvidence(...args);if(++calls===1){r.evidence.conflicts=[{fieldKey:'synthetic',message:'synthetic conflict',sourceIds:[r.evidence.sources[0].citationKey]}];r.evidence.snapshotDigest=evidenceDigest(r.evidence);}return r;}});const r=await s.createRun({input:input(),mode:'synthetic'});await s.actOnRun(r.runId,{action:'execute',expectedVersion:1});await s.waitForIdle();assert.equal((await s.getRun(r.runId)).state,'blocked');await s.actOnRun(r.runId,{action:'regenerate',expectedVersion:1});await s.waitForIdle();assert.equal(calls,2);assert.equal((await s.getRun(r.runId)).exportable,true);});
+
+test('portable HTML export embeds verified originals, no external request or scripts',async t=>{
+ const s=await setup(t);const r=await ready(s,'xiaohongshu');const output=await s.exportRun(r.runId,1,'html');
+ assert.equal(output.mimeType,'text/html');assert.match(output.content,/data:image\/png;base64,/);assert.match(output.content,/小红书模拟预览/);assert.match(output.content,/未发布/);assert.match(output.content,/default-src 'none'/);assert.ok(!/<script|https?:\/\//.test(output.content));
+ await s.actOnRun(r.runId,{action:'revise',expectedVersion:1,patch:{draft:{...editable(r),title:'新的标题'}}});await assert.rejects(s.exportRun(r.runId,2,'html'),{code:'EXPORT_NOT_READY'});
+});
+test('HTML escaping covers user/model text and attributes',async t=>{
+ const s=await setup(t);const r=await ready(s);const {htmlForRun}=await import('../../src/server/runs/html-export');
+ r.draft!.title='<script>alert(1)</script>';r.draft!.selectedImages[0].caption='" onerror="attack';
+ const image=r.evidence!.images[0];const html=htmlForRun(r,new Map([[image.imageId,{bytes:Buffer.from('synthetic'),mimeType:'image/png'}]]));
+ assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('&quot; onerror=&quot;attack'));
+});
+test('local evidence cannot export with synthetic generation or synthetic semantic verdict',async t=>{
+ const s=await setup(t);const r=await ready(s);const {canExport}=await import('../../src/server/runs/export-gate');
+ r.mode='local';r.evidence!.provenanceMode='local';r.evidence!.snapshotDigest=evidenceDigest(r.evidence!);r.validation!.checkedEvidenceDigest=r.evidence!.snapshotDigest;
+ assert.equal(canExport(r),false);r.executionEvidence.generationMode='live';r.executionEvidence.modelInvoked=true;assert.equal(canExport(r),false);r.validation!.semanticMode='live';assert.equal(canExport(r),true);
+});

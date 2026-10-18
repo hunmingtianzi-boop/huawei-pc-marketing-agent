@@ -295,3 +295,5 @@ LocalSourceOptions={rootDir?:string} 仅服务端；默认 rootDir 为 LOCAL_KB_
 只读扫描 P1-产品参数库/01-鸿蒙电脑 与 02-MateBook-Windows 各产品目录的 产品事实.md、图片索引.csv 和原件；忽略扩展营销/竞品文案。H1 精确具体型号、CSV 产品型号与文件名/真实解码摘要共同构成图片依据。拒绝目录越界与符号链接外逃，不取 CSV 外链；不重复图凑数。安全视图只包含相对定位和短摘录，完整原文私存。local 路径中 callIma/fetchMedia 明确拒绝，实际模型留服务端。
 
 DraftPreview 新增可选 platform（默认 wechat_article 兼容旧调用），按当前草稿渲染模拟视图；平台切换仍走 input 修订/重生成，不通过切换预览冒充适配成稿。仿真界面明确未发布，无虚构阅读/点赞/亲测数据。
+
+导出格式新增 html，保持 ExportResponse 包装。服务端在同一 canExport 及版本重查门槛下，将当前选图原件内嵌 data:image/png|jpeg|webp;base64，无外链与脚本，所有用户/模型文本HTML转义。离线文件可直接打开，显示平台模拟与来源模式。此为兼容新增格式，Markdown/text不变。
