@@ -10,7 +10,7 @@ export function clarifyTask(input: TaskInput, meta: { taskId: string; briefVersi
   input = TaskInput.parse(input);
   const missing: string[] = []; const questions: string[] = [];
   const require = (field: string, absent: boolean, question: string) => { if (absent) { missing.push(field); questions.push(question); } };
-  require("productRequest", !input.productRequest?.trim() || !/(?:\d|MateBook\s*X\s*Pro)/i.test(input.productRequest), "请提供知识库中的具体产品型号和版本，例如 HUAWEI MateBook 14（鸿蒙版）。");
+  require("productRequest", !input.productRequest?.trim() || !/(?:\d|MateBook\s*(?:X\s*Pro|Pro(?:\s*S)?|Fold(?:\s*非凡大师)?))/i.test(input.productRequest), "请提供知识库中的具体产品型号和版本，例如 HUAWEI MateBook 14（鸿蒙版）。");
   require("targetAudience", !input.targetAudience?.trim(), "本次内容面向哪类人群？");
   require("useScenario", !input.useScenario?.trim(), "本次主要使用场景是什么？");
   require("platform", !input.platform, "需要朋友圈、公众号还是小红书内容？");
@@ -55,17 +55,17 @@ export function usableEvidence(context: GenerationContext) {
 }
 
 /** Explicit minimal evidence projection. No full documents or provider refs. */
-export function modelPayload(context: GenerationContext) {
+export function modelPayload(context: GenerationContext, purpose: "generate" | "verify" = "verify") {
   const { facts, images } = usableEvidence(context);
   const travel = /出差|差旅|商务|移动办公|职场/.test(`${context.brief.useScenario} ${context.brief.targetAudience}`);
   const ordered = facts.map((fact, n) => ({ fact, n, score: travel ? /便携|重量|轻|携带/.test(`${fact.fieldKey} ${fact.supportedStatement}`) ? 0 : /办公|协作|连接/.test(fact.supportedStatement) ? 1 : 2 : /学习|应用|软件|系统/.test(`${fact.fieldKey} ${fact.supportedStatement}`) ? 0 : /显示|屏|阅读/.test(fact.supportedStatement) ? 1 : 2 })).sort((a, b) => a.score - b.score || a.n - b.n).map(x => x.fact);
-  return { brief: { targetAudience: context.brief.targetAudience, useScenario: context.brief.useScenario, contentGoal: context.brief.contentGoal, platform: context.brief.platform, requestedClaims: context.brief.requestedClaims, constraints: context.brief.constraints }, strategy: context.strategy, product: { displayName: context.evidence.product.displayName, variant: context.evidence.product.variant }, facts: (context.brief.platform === "wechat_moments" ? ordered.slice(0, 1) : ordered).map(f => ({ factId: f.factId, fieldKey: f.fieldKey, supportedStatement: f.supportedStatement, qualifiers: f.qualifiers, value: f.value, unit: f.unit })), images: images.map(i => ({ imageId: i.imageId, description: i.sourceView.supportingExcerpt || "产品外观资料图", modelMatchSummary: i.modelMatchSummary })) };
+  return { brief: { targetAudience: context.brief.targetAudience, useScenario: context.brief.useScenario, contentGoal: context.brief.contentGoal, platform: context.brief.platform, requestedClaims: context.brief.requestedClaims, constraints: context.brief.constraints }, strategy: context.strategy, product: { displayName: context.evidence.product.displayName, variant: context.evidence.product.variant }, facts: (purpose === "generate" && context.brief.platform === "wechat_moments" ? ordered.slice(0, 1) : ordered).map(f => ({ factId: f.factId, fieldKey: f.fieldKey, supportedStatement: f.supportedStatement, qualifiers: f.qualifiers, value: f.value, unit: f.unit })), images: images.map(i => ({ imageId: i.imageId, description: i.sourceView.supportingExcerpt || "产品外观资料图", modelMatchSummary: i.modelMatchSummary })) };
 }
 
 export async function generateDraft(context: GenerationContext, model: ModelClient): Promise<GenerationOutcome> {
   if (context.brief.missingFields.length || !context.brief.platform) throw new BusinessError("MISSING_INPUT", "任务条件尚未补齐。", 409, true);
   if (context.strategy.briefVersion !== context.brief.briefVersion) throw new BusinessError("STALE_STRATEGY", "策略与当前任务不一致，请重新规划。", 409, true);
-  const response = await model({ purpose: "generate", system: await runtimePrompt("generate"), user: JSON.stringify(modelPayload(context)) });
+  const response = await model({ purpose: "generate", system: await runtimePrompt("generate"), user: JSON.stringify(modelPayload(context, "generate")) });
   if (context.evidence.provenanceMode === "live" && response.mode !== "live") throw new BusinessError("MODEL_MODE_MISMATCH", "真实资料任务不能使用 synthetic 模型结果。", 409, true);
   let editable: DraftEditable;
   try { editable = DraftEditable.parse(JSON.parse(response.text)); }

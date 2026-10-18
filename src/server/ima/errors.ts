@@ -26,8 +26,8 @@ const messages: Record<ErrorCode, string> = {
   INTERNAL_ERROR: "本机执行发生错误，请检查配置与私有诊断。",
 };
 export class ImaError extends Error {
-  constructor(public code: ErrorCode, public blocked = false) { super(messages[code]); }
-  safe(): SafeError { return { code: this.code, message: messages[this.code], retryable: ["NETWORK_ERROR", "RATE_LIMITED"].includes(this.code) }; }
+  constructor(public code: ErrorCode, public blocked = false, safeMessage?: string) { super(safeMessage ?? messages[code]); }
+  safe(): SafeError { return { code: this.code, message: this.message, retryable: ["NETWORK_ERROR", "RATE_LIMITED"].includes(this.code) }; }
 }
 export function normalizeError(error: unknown): ImaError {
   return error instanceof ImaError ? error : new ImaError("INTERNAL_ERROR");

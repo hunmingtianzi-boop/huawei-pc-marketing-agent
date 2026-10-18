@@ -118,3 +118,5 @@ test("synthetic I-06/I-07: code=0 without link or notebook never means original 
 test("synthetic: source reads use an explicit four-method allowlist", () => {
   assert.deepEqual(READ_ONLY_METHODS, ["search_knowledge_base", "get_knowledge_list", "search_knowledge", "get_media_info"]);
 });
+
+test("synthetic regression from live daily quota: 220021 preserves rate-limit boundary and explicit next-day guidance",()=>{try{envelope({code:220021,msg:"untrusted"});assert.fail();}catch(e){assert.ok(e instanceof ImaError);assert.equal(e.code,"RATE_LIMITED");assert.match(e.safe().message,/明天/);assert.equal(e.blocked,true);assert.ok(!e.safe().message.includes("untrusted"));}});

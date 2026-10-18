@@ -55,3 +55,4 @@ S2开发任务均实际completed；worker提交分别db0d0f0/a241ebf、c0eb4b1�
 主控集成修复所有权补充：开发worker已completed后，主控临时负责src/server/workflow/index.ts、src/components/marketing-workbench.tsx及对应tests/workflow、tests/ui中reviewer可复现问题的最小修复，避免原worker基线与集成版本分歧；不扩展其它功能。原worktree保留已提交交付快照。
 主控临时修复范围追加src/server/verification/index.ts：reviewer发现有依据的100% sRGB参数被当绝对宣传误拦截，仅修复此项与相关workflow回归检查。
 主控live集成修复范围追加prompts/runtime/**、src/server/workflow/index.ts、src/server/runs/service.ts及相关tests/runs/workflow：真实生成出现未支持的阅读舒适性推断（被独立核验拦截），收紧生成事实范围/提示并保留私有模型响应诊断，继续真实验收。
+主控最小修复范围追加src/server/ima/{adapter,errors}.ts与tests/ima/adapter.test.ts：本次live新增错误码220021（当日资料次数上限），沿用1.0.0的RATE_LIMITED安全边界并给出明确明天重试信息。运行服务允许同任务、同型号、24小时内的已取证快照用于重新生成/换平台场景，逐张重查缓存摘要并明确记录复用；换型号清空，不自动把失败请求换成假资料。

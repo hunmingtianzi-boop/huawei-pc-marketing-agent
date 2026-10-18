@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { DraftContent, DraftEditable, TaskInput } from "../../src/contracts/business";
 import { contentDigest, evidenceDigest, strategyDigest } from "../../src/contracts/digests";
-import { clarifyTask, generateDraft, planContent } from "../../src/server/workflow";
+import { clarifyTask, generateDraft, planContent, modelPayload } from "../../src/server/workflow";
 import { createSyntheticModelClient, createLiveModelClient } from "../../src/server/llm";
 import { validateDraft } from "../../src/server/verification";
 import { fixture } from "./fixture";
@@ -134,3 +134,9 @@ test("evidenced 100% sRGB is a specification while 100% success remains blocked"
  const valid=await validateDraft({...context,draft:d},synthetic);assert.equal(valid.status,"passed",JSON.stringify(valid.issues));
  const bad=edited(d,x=>x.title="100%成功，保证结果");const rejected=await validateDraft({...context,draft:bad},synthetic);assert.equal(rejected.status,"failed");assert.ok(rejected.issues.some(i=>i.code==="PROHIBITED_MARKETING_CLAIM"));
 });
+
+test("live-discovered explicit Pro and Fold names enter retrieval without invented identity",()=>{
+ for(const productRequest of ["HUAWEI MateBook Pro","HUAWEI MateBook Pro S","HUAWEI MateBook Fold 非凡大师"]){const brief=clarifyTask(TaskInput.parse({productRequest}),{taskId:randomUUID(),briefVersion:1});assert.ok(!brief.missingFields.includes("productRequest"));assert.equal(brief.productSelection,null);}
+});
+
+test("moments generation narrows facts but edited draft verification keeps full supported context",()=>{const context=fixture();assert.equal(modelPayload(context,"generate").facts.length,1);assert.equal(modelPayload(context,"verify").facts.length,context.evidence.facts.length);});

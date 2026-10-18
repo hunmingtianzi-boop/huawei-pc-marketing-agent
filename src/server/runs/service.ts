@@ -48,8 +48,17 @@ export function createRunService(deps:Services){
     const strategy=deps.modules.planContent(current.brief);
     await update(run=>{run.strategy=strategy;});
     await stage("retrieving","正在只读获取产品原文、事实与型号图片。");
-    const services=await deps.retrievalServices(current,privateDir);
-    const retrieved=await deps.modules.retrieveEvidence({runId:id,productRequest:current.brief.productRequest,mode:current.mode},services);
+    const cached=current.evidence;
+    const reusable=cached && cached.provenanceMode===current.mode && cached.snapshotDigest===evidenceDigest(cached) && Date.now()-Date.parse(cached.retrievedAt)<24*60*60*1000;
+    let retrieved:Awaited<ReturnType<RuntimeModules["retrieveEvidence"]>>;
+    if(reusable){
+     const assets=[];for(const image of cached.images){const asset=await readRunAsset(repo.directory(id),current,image.imageId);assets.push({imageId:image.imageId,bytes:asset.bytes,mimeType:asset.mimeType});}
+     retrieved={evidence:cached,assets,documents:[]};
+     await update(run=>{run.stageSummary.push({stage:"retrieving",at:now(),status:"passed",summary:`复用本任务 ${cached.retrievedAt} 已实际取得的 ${current.mode} 资料快照；已逐张重查本机原件摘要，本次未重新请求 ima。`});});
+    }else{
+     const services=await deps.retrievalServices(current,privateDir);
+     retrieved=await deps.modules.retrieveEvidence({runId:id,productRequest:current.brief.productRequest,mode:current.mode},services);
+    }
     const evidence=ProductEvidence.parse(retrieved.evidence);
     if(evidence.provenanceMode!==current.mode||evidence.snapshotDigest!==evidenceDigest(evidence))throw new BusinessError("EVIDENCE_INVALID","取证模式或摘要不一致。",409);
     const sources=new Set(evidence.sources.map(s=>s.citationKey));
@@ -89,7 +98,7 @@ export function createRunService(deps:Services){
     if(action.patch.input&&action.patch.draft)throw new BusinessError("INVALID_INPUT","任务条件和稿件请分开修改。",400);
     if(action.patch.draft&&!run.draft)throw new BusinessError("DRAFT_MISSING","当前没有可编辑的草稿。",409);
     invalidate(run);run.currentVersion++;run.issues=[];
-    if(action.patch.input){run.input=TaskInput.parse(action.patch.input);run.brief=deps.modules.clarifyTask(run.input,{taskId:id,briefVersion:run.brief.briefVersion+1});run.strategy=null;run.evidence=null;run.draft=null;run.validation=null;run.executionEvidence={retrievalMode:run.mode,generationMode:"not_run",modelInvoked:false,model:null,endpointOrigin:null};run.state=run.brief.missingFields.length?"needs_input":"draft";}
+    if(action.patch.input){const sameProduct=action.patch.input.productRequest?.trim()===run.input.productRequest?.trim();const retainedEvidence=sameProduct?run.evidence:null;run.input=TaskInput.parse(action.patch.input);run.brief=deps.modules.clarifyTask(run.input,{taskId:id,briefVersion:run.brief.briefVersion+1});run.strategy=null;run.evidence=retainedEvidence;run.draft=null;run.validation=null;run.executionEvidence={retrievalMode:run.mode,generationMode:"not_run",modelInvoked:false,model:null,endpointOrigin:null};run.state=run.brief.missingFields.length?"needs_input":"draft";}
     else if(action.patch.draft){run.draft={...action.patch.draft,version:run.currentVersion,contentDigest:contentDigest(action.patch.draft)};run.state="needs_revision";}
     run.stageSummary.push({stage:"revision",at:now(),status:"blocked",summary:"内容或任务已修改，旧核验与导出立即失效。"});
    }else{
@@ -98,7 +107,7 @@ export function createRunService(deps:Services){
     if(action.action==="revalidate"&&(!run.draft||!run.evidence||!run.strategy))throw new BusinessError("DRAFT_MISSING","当前没有可重新核验的草稿。",409);
     if(action.action==="execute"&&!["draft","needs_input","blocked","failed"].includes(run.state))throw new BusinessError("ACTION_INVALID","请使用重新生成或重新核验。",409);
     invalidate(run);if(action.action==="regenerate"){run.currentVersion++;run.draft=null;}
-    if(action.action!=="revalidate"){run.draft=null;run.evidence=null;run.strategy=null;run.executionEvidence={retrievalMode:run.mode,generationMode:"not_run",modelInvoked:false,model:null,endpointOrigin:null};}
+    if(action.action!=="revalidate"){run.draft=null;run.strategy=null;run.executionEvidence={retrievalMode:run.mode,generationMode:"not_run",modelInvoked:false,model:null,endpointOrigin:null};}
     run.issues=[];run.activeOperationId=randomUUID();run.state=action.action==="revalidate"?"validating":"planning";
    }
    run.updatedAt=now();return run;

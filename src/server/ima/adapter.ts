@@ -20,6 +20,7 @@ export function envelope(raw: unknown) {
   const r = record(raw);
   if (r.code === -200) throw new ImaError("SKILL_UPDATE_REQUIRED", true);
   if (r.code === 110030) throw new ImaError("PERMISSION_DENIED", true);
+  if (r.code === 220021) throw new ImaError("RATE_LIMITED", true, "ima 资料获取次数已达当日上限，请明天再尝试。");
   if (r.code === 429 || r.code === 110021) throw new ImaError("RATE_LIMITED", true);
   if (r.code === -100 || r.code === 110010) throw new ImaError("NETWORK_ERROR", true);
   if (typeof r.code !== "number") throw new ImaError("PROVIDER_SCHEMA_UNRECOGNIZED");
