@@ -35,6 +35,11 @@ export function createRunService(deps:Services){
  }
  async function perform(start:Run,operation:"execute"|"regenerate"|"revalidate"){
   const version=start.currentVersion,operationId=start.activeOperationId!,id=start.runId;
+  const privateDir=path.join(repo.directory(id),"private",operationId);
+  const modelFor=(run:Run)=>{
+   const client=run.mode==="synthetic"?deps.modules.createSyntheticModelClient():deps.modules.createLiveModelClient(deps.modelSettings());
+   return async(request:Parameters<typeof client>[0])=>{const result=await client(request);await mkdir(privateDir,{recursive:true,mode:0o700});await writeFile(path.join(privateDir,`model-${request.purpose}-${randomUUID()}.json`),JSON.stringify(result),{mode:0o600});return result;};
+  };
   const update=(change:(run:Run)=>void)=>tokenUpdate(id,version,operationId,change);
   const stage=(state:Run["state"],summary:string)=>update(run=>{run.state=state;run.stageSummary.push({stage:state,at:now(),status:"running",summary});});
   try{
@@ -43,7 +48,7 @@ export function createRunService(deps:Services){
     const strategy=deps.modules.planContent(current.brief);
     await update(run=>{run.strategy=strategy;});
     await stage("retrieving","正在只读获取产品原文、事实与型号图片。");
-    const privateDir=path.join(repo.directory(id),"private",operationId);const services=await deps.retrievalServices(current,privateDir);
+    const services=await deps.retrievalServices(current,privateDir);
     const retrieved=await deps.modules.retrieveEvidence({runId:id,productRequest:current.brief.productRequest,mode:current.mode},services);
     const evidence=ProductEvidence.parse(retrieved.evidence);
     if(evidence.provenanceMode!==current.mode||evidence.snapshotDigest!==evidenceDigest(evidence))throw new BusinessError("EVIDENCE_INVALID","取证模式或摘要不一致。",409);
@@ -56,14 +61,14 @@ export function createRunService(deps:Services){
     if(!evidence.facts.some(f=>f.status==="supported"))throw new BusinessError("NO_SUPPORTED_FACTS","没有可用于成稿的已支持事实。",409,true);
     const platform=current.brief.platform!;if(evidence.images.length<IMAGE_COUNTS[platform].min)throw new BusinessError("INSUFFICIENT_IMAGES",`当前只有 ${evidence.images.length} 张型号可证图片，所选平台至少需要 ${IMAGE_COUNTS[platform].min} 张。`,409,true);
     await stage("generating","正在从已支持事实生成平台图文。");
-    const model=current.mode==="synthetic"?deps.modules.createSyntheticModelClient():deps.modules.createLiveModelClient(deps.modelSettings());
+    const model=modelFor(current);
     const outcome=await deps.modules.generateDraft({brief:current.brief,strategy:current.strategy!,evidence,version},model);
     if(outcome.draft.version!==version||outcome.draft.contentDigest!==contentDigest(outcome.draft)||outcome.generationMode!==current.mode)throw new BusinessError("DRAFT_INVALID","生成版本、摘要或模式不一致。",409);
     current=await update(run=>{run.draft=outcome.draft;run.executionEvidence={retrievalMode:evidence.provenanceMode,generationMode:outcome.generationMode,modelInvoked:outcome.modelInvoked,model:outcome.model,endpointOrigin:outcome.endpointOrigin};});
    }
    current=await stage("validating","正在独立核验所有文案、事实引用与图片。");
    if(!current.draft||!current.evidence||!current.strategy)throw new BusinessError("DRAFT_MISSING","没有可核验的草稿。",409);
-   const model=current.mode==="synthetic"?deps.modules.createSyntheticModelClient():deps.modules.createLiveModelClient(deps.modelSettings());
+   const model=modelFor(current);
    const validation=await deps.modules.validateDraft({brief:current.brief,strategy:current.strategy,evidence:current.evidence,version,draft:current.draft},model);
    await update(run=>{
     run.validation=validation;run.issues=validation.issues;run.activeOperationId=null;run.state=validation.status==="passed"?"ready":validation.issues.some(i=>i.severity==="blocker"&&i.status==="open")?"blocked":"needs_revision";
