@@ -1,0 +1,10 @@
+import {config} from "dotenv";config({path:".env.local",quiet:true});
+import {randomUUID} from "node:crypto";
+import {mkdir,writeFile} from "node:fs/promises";
+import path from "node:path";
+import {retrieveEvidence} from "../src/server/ima/business";
+import {inspectSkill,officialTransport} from "../src/server/ima/transport";
+import {fetchMedia,decodeImage} from "../src/server/assets/media";
+import {cacheRunAssets} from "../src/server/assets/run-assets";
+import {dataRoot} from "../src/server/runs/probe-store";
+async function main(){const id=randomUUID();const dir=path.join(dataRoot(),"business-preflight",id);await mkdir(dir,{recursive:true,mode:0o700});const skill=await inspectSkill(process.env.IMA_SKILL_PATH||"vendor/ima-skill/ima_api.cjs");const result=await retrieveEvidence({runId:id,productRequest:"HUAWEI MateBook 14（鸿蒙版）",mode:"live"},{callIma:officialTransport(skill.script,dataRoot()),fetchMedia,decodeImage,persistPrivate:async(name,data)=>{if(path.basename(name)!==name)throw Error("invalid path");await writeFile(path.join(dir,name),data,{mode:0o600});}});await cacheRunAssets(dir,result.evidence,result.assets);await writeFile(path.join(dir,"evidence.json"),JSON.stringify(result.evidence),{mode:0o600});const summary={at:new Date().toISOString(),mode:"live",status:result.evidence.conflicts.length?"BLOCKED":"PASS",product:result.evidence.product.displayName,factCount:result.evidence.facts.length,sourceCount:result.evidence.sources.length,uniqueImageCount:result.evidence.images.length,imageDimensions:result.evidence.images.map(i=>({width:i.width,height:i.height,mimeType:i.mimeType})),conflictCount:result.evidence.conflicts.length,coverageGaps:result.evidence.coverageGaps,privateEvidencePath:path.join(dir,"evidence.json")};await mkdir(".local-evidence/stage2",{recursive:true});await writeFile(".local-evidence/stage2/multi-image.json",JSON.stringify(summary,null,2));console.log(JSON.stringify(summary,null,2));}main().catch(()=>{console.error("Live business evidence failed; inspect private records, no secrets emitted.");process.exitCode=1;});

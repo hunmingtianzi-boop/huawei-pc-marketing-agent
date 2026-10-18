@@ -1,6 +1,8 @@
 import type { RuntimeModules } from "../../contracts/business";
-import { BusinessError } from "./business-error";
-// Main integrates worker entrypoints here after reviewing their commits.
+import { clarifyTask, planContent, generateDraft } from "../workflow";
+import { retrieveEvidence } from "../ima/business";
+import { validateDraft } from "../verification";
+import { createLiveModelClient, createSyntheticModelClient } from "../llm";
 export function runtimeModules(): RuntimeModules {
-  throw new BusinessError("MODULE_NOT_INTEGRATED", "业务模块尚在开发。", 503, true);
+  return { clarifyTask, planContent, retrieveEvidence, generateDraft, validateDraft, createLiveModelClient, createSyntheticModelClient };
 }
