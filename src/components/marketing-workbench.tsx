@@ -58,7 +58,7 @@ export default function MarketingWorkbench() {
     request("/api/runs", RunListResponse).then(data => { if (mounted) setHistory(data.runs); }).catch(err => { if (mounted) setError(err instanceof Error ? err.message : "无法读取运行记录"); });
     request("/api/local-catalog", LocalCatalog).then(data => { if (mounted) { setCatalog(data); if (!data.available) setCatalogError("本地资料目录当前不可用，可手动填写型号并查看执行结果。"); } }).catch(() => { if (mounted) setCatalogError("本地产品目录暂时无法读取，可手动填写完整型号；执行错误将如实显示。"); });
     const initialId = new URLSearchParams(window.location.search).get("run");
-    if (initialId && z.uuid().safeParse(initialId).success) void loadRun(initialId, true);
+    if (initialId && z.uuid().safeParse(initialId).success) void loadRun(initialId);
     return () => { mounted = false; };
   }, []);
   useEffect(() => {
@@ -94,11 +94,11 @@ export default function MarketingWorkbench() {
       try { const latest = await request(`/api/runs/${id}`, RunResponse); accept(latest.run, true); setNotice("版本发生变化，已载入服务端最新稿。请在最新版本上重新编辑或执行。"); } catch { setNotice("版本冲突，请重新选择运行记录加载最新版本。"); }
     }
   }
-  async function loadRun(id: string, preserveNewEdits = false) {
+  async function loadRun(id: string) {
     if (pending.current) return;
     pending.current = true; setBusy(true); setError(""); setNotice("");
     const ticket = ++requestEpoch.current; const editEpoch = revisionEpoch.current; selectedId.current = id; current.current = null;
-    try { const data = await request(`/api/runs/${id}`, RunResponse); if (ticket === requestEpoch.current) { accept(data.run, !preserveNewEdits || editEpoch === revisionEpoch.current); setMode(data.run.mode); } } catch (err) { await handleError(err, id); }
+    try { const data = await request(`/api/runs/${id}`, RunResponse); if (ticket === requestEpoch.current) { accept(data.run, editEpoch === revisionEpoch.current); setMode(data.run.mode); if (editEpoch !== revisionEpoch.current) setNotice("载入期间的新编辑已保留；请核对任务内容，保存并重新核验后再导出。"); } } catch (err) { await handleError(err, id); }
     finally { pending.current = false; setBusy(false); }
   }
   async function action(actionName: "execute" | "regenerate" | "revalidate" | "revise", patch?: { input?: TaskInput; draft?: DraftEditable }) {

@@ -8,7 +8,7 @@ export function htmlForRun(run: RunResult, assets: Map<string, { bytes: Buffer; 
  const picture = (item: typeof draft.selectedImages[number]) => {
   const asset = assets.get(item.imageId), image = evidence.images.find(i=>i.imageId===item.imageId);
   if (!asset || !image || !/^image\/(png|jpeg|webp|gif)$/.test(asset.mimeType)) throw new Error("Invalid verified export asset");
-  return `<figure><img src="data:${asset.mimeType};base64,${asset.bytes.toString("base64")}" alt="${escape(item.caption)}"><figcaption>${escape(item.caption)}<details><summary>图片依据</summary>${escape(image.fileName)} · ${escape(image.sourceView.sourceTitle)} · ${escape(image.sourceView.locatorLabel)}<p>${escape(item.purpose)}</p></details></figcaption></figure>`;
+  return `<figure><img src="data:${asset.mimeType};base64,${asset.bytes.toString("base64")}" alt="${escape(item.caption)}"><figcaption>${escape(item.caption)}<details><summary>图片依据</summary>${escape(image.fileName)} · ${escape(image.sourceView.sourceTitle)} · ${escape(image.sourceView.locatorLabel)}<p>${escape(item.purpose)}</p><p>Placement: ${escape(item.placement.blockKey)} / ${escape(item.placement.position)}</p></details></figcaption></figure>`;
  };
  const paragraph = (text: string, className = "") => `<p class="${className}">${escape(text)}</p>`;
  const body = draft.bodyBlocks.map(block => {

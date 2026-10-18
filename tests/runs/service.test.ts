@@ -61,7 +61,7 @@ test('conflicted snapshot never traps a retry after upstream correction',async t
 
 test('portable HTML export embeds verified originals, no external request or scripts',async t=>{
  const s=await setup(t);const r=await ready(s,'xiaohongshu');const output=await s.exportRun(r.runId,1,'html');
- assert.equal(output.mimeType,'text/html');assert.match(output.content,/data:image\/png;base64,/);assert.match(output.content,/小红书模拟预览/);assert.match(output.content,/未发布/);assert.match(output.content,/default-src 'none'/);assert.ok(!/<script|https?:\/\//.test(output.content));
+ assert.equal(output.mimeType,'text/html');assert.match(output.content,/data:image\/png;base64,/);assert.match(output.content,/小红书模拟预览/);assert.match(output.content,/未发布/);for(const selected of r.draft!.selectedImages){assert.ok(output.content.includes('Placement: '+selected.placement.blockKey+' / '+selected.placement.position));}assert.match(output.content,/default-src 'none'/);assert.ok(!/<script|https?:\/\//.test(output.content));
  await s.actOnRun(r.runId,{action:'revise',expectedVersion:1,patch:{draft:{...editable(r),title:'新的标题'}}});await assert.rejects(s.exportRun(r.runId,2,'html'),{code:'EXPORT_NOT_READY'});
 });
 test('HTML escaping covers user/model text and attributes',async t=>{

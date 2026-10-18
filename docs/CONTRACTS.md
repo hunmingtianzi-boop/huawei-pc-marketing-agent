@@ -1,6 +1,6 @@
 # 内部数据契约与状态流程
 
-状态：**首轮接入契约 v1.0.0 已按 2026-10-18 live 原文、目录与图片样本冻结**。`src/contracts/index.ts` 为已实现 schema 的唯一来源。本文后续完整营销运行结构仍是第二阶段设计，不能当作运行功能；详细冻结边界与真实映射见文末第 10 节。
+状态：基础接入1.0.0保留；完整营销运行业务2.1.0已实现，新增用户授权local来源并兼容已保存2.0.0。代码schema以src/contracts/index.ts与business.ts为准；历史冻结说明见第10节，当前local/HTML增量见文末。实际验证以STATUS为准。
 
 ## 1. 契约边界与修改责任
 
@@ -261,7 +261,7 @@
 - **R2**：[ima 官方 Skill 1.1.10 下载包](https://app-dl.ima.qq.com/skills/ima-skills-1.1.10.zip)，包内 `knowledge-base/references/api.md` 的数据结构、知识库搜索/列表、媒体信息章节及 `knowledge-base/SKILL.md` 的文件夹、原文访问和展示规则。仅完成静态核对；内部字段、状态与版本设计由本项目提出。
 
 
-## 10. 第一阶段冻结记录（2026-10-18）
+## 10. 第一阶段历史冻结记录（2026-10-18，当时状态）
 
 版本：`1.0.0`。已实现：模式/状态/错误、ProductSelection、SourceView、FactPoint、ImageView、TaskBrief、ContentStrategy、RunState 枚举、ProbeInput、ProbeStage、ProbeReport。接入报告额外绑定 `product`（包含实际系统版本），安全 ImageView 包含 `fileName`；PASS 要求七步均实际执行且通过、真实来源和可解码型号图片存在、图片与产品键一致。完整 RunResult / DraftContent / ValidationReport / ProductEvidence 的运行实现仍属阶段二，主控须先按本文补齐相应代码 schema 和 HTTP 端点，再分发依赖该部分的 worker。
 
@@ -296,4 +296,4 @@ LocalSourceOptions={rootDir?:string} 仅服务端；默认 rootDir 为 LOCAL_KB_
 
 DraftPreview 新增可选 platform（默认 wechat_article 兼容旧调用），按当前草稿渲染模拟视图；平台切换仍走 input 修订/重生成，不通过切换预览冒充适配成稿。仿真界面明确未发布，无虚构阅读/点赞/亲测数据。
 
-导出格式新增 html，保持 ExportResponse 包装。服务端在同一 canExport 及版本重查门槛下，将当前选图原件内嵌 data:image/png|jpeg|webp;base64，无外链与脚本，所有用户/模型文本HTML转义。离线文件可直接打开，显示平台模拟与来源模式。此为兼容新增格式，Markdown/text不变。
+导出格式新增 html，保持 ExportResponse 包装。服务端在同一 canExport 及版本重查门槛下，将当前选图原件内嵌 data:image/png|jpeg|webp|gif;base64，无外链与脚本，所有用户/模型文本HTML转义。离线文件可直接打开，显示平台模拟与来源模式。此为兼容新增格式，Markdown/text不变。
